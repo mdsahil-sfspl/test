@@ -311,7 +311,7 @@ graph TD
     style D8 fill:#9D4EDD,stroke:#7B2CBF,stroke-width:2px,color:#fff,font-weight:bold
 ```
 
-**[Diagram 2: Data Flow Level-1]**
+**[Diagram 3: Data Flow Level-1]**
 
 
 #### 📋 Color Coding
@@ -376,7 +376,7 @@ graph TB
     style N8N fill:#f1f8e9
 ```
 
-**[Diagram 3: Technology Stack Architecture - Updated with QR Service]**
+**[Diagram 4: Technology Stack Architecture - Updated with QR Service]**
 
 ---
 
@@ -411,7 +411,7 @@ The **HR Onboarding Agent** serves as a **web-based digital platform** that conn
 - Supabase storage for documents and file management
 - QR-based check-in system for interview venues
 
-**[Diagram 4: System Architecture Overview]**
+**[Diagram 5: System Architecture Overview]**
 
 ```mermaid
 graph TB
@@ -532,7 +532,7 @@ graph TB
     style TLS fill:#ffcdd2
 ```
 
-**[Diagram 5: Logical Topology with QR Service]**
+**[Diagram 6: Logical Topology with QR Service]**
 
 ---
 
