@@ -1,4 +1,4 @@
-# HR Onboarding Agent - System Design Document
+# HR Onboarding Agent - HLD (High Level Document)
 
 **Document Version Control**
 
