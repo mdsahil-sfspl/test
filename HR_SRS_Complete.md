@@ -1,2226 +1,1819 @@
-# HR Onboarding Agent - Software Requirements Specification (SRS)
-## COMPLETE DOCUMENT - Part 2 of 2
+# HR Onboarding Agent
+## Software Requirements Specification (SRS)
 
-**Document Version:** 1.0  
+**Document Version:** 2.0 (Cleaned - Code Removed)  
 **Created Date:** January 05, 2026  
-**Continuation from Part 1**
+**Updated Date:** January 09, 2026  
+**Organization:** Sampurna Financial Services Pvt. Ltd. (SFSPL)
 
 ---
 
-## CONTINUING FROM FR-3.2...
+## TABLE OF CONTENTS
+
+1. [Introduction](#1-introduction)
+2. [Functional Requirements](#2-functional-requirements)
+3. [Non-Functional Requirements](#3-non-functional-requirements)
+4. [System Architecture Requirements](#4-system-architecture-requirements)
+5. [Data Requirements](#5-data-requirements)
+6. [Security & Compliance Requirements](#6-security--compliance-requirements)
+7. [Interface Requirements](#7-interface-requirements)
+8. [User Roles & Permissions](#8-user-roles--permissions)
+9. [Acceptance Criteria](#9-acceptance-criteria)
+10. [Delivery Phases](#10-delivery-phases)
+
+---
+
+## 1. INTRODUCTION
+
+### 1.1 PURPOSE
+
+This Software Requirements Specification (SRS) document defines the functional and non-functional requirements for the HR Onboarding Agent system at Sampurna Financial Services Pvt. Ltd. (SFSPL).
+
+**Document Scope:**
+- High-level requirements specification (WHAT needs to be built)
+- Functional requirements for all system features
+- Non-functional quality requirements (performance, security, usability)
+- Data specifications
+- System-level requirements
+
+**NOT Included in SRS (Belong to separate Design/Implementation Documents):**
+- ❌ Source code or code examples
+- ❌ Detailed algorithm implementation
+- ❌ SQL queries or database triggers
+- ❌ UI component code (HTML/CSS/JavaScript)
+- ❌ API implementation details beyond specification
+
+**Intended Audience:**
+- Business analysts and stakeholders
+- Test engineers and QA teams
+- System architects (for high-level design)
+- Project managers
+- Technical leads
+
+### 1.2 SCOPE
+
+**In Scope:**
+- Complete candidate lifecycle management (application → offer → onboarding)
+- Multi-stage digital forms (Form-1 through Form-4)
+- QR-based check-in system for interview venues
+- Dual candidate paths (Screened vs Walk-in)
+- Interview scheduling and evaluation
+- Background verification workflow
+- Offer letter generation and management
+- Onboarding checklist and task management
+- Multi-channel notifications (WhatsApp, Email, SMS)
+- Real-time dashboards and analytics
+- Document management and KYC
+- Audit logging and compliance
+
+**Out of Scope:**
+- Full background verification automation (manual process with status tracking)
+- Direct auto-sync with Octane HRMS (manual export)
+- AI-based candidate ranking
+- Video interview platform integration
+- Multi-company/multi-tenant support
+
+### 1.3 DOCUMENT STRUCTURE
+
+**Definition Levels:**
+- **Requirement ID (FR-1.1):** Unique identifier for traceability
+- **Priority:** HIGH, MEDIUM, LOW
+- **Description:** One-line summary
+- **Functional Specifications:** Detailed WHAT is required
+- **Business Rules:** Conditions and constraints
+- **Acceptance Criteria:** How to verify the requirement is met
+
+### 1.4 KEY DEFINITIONS
+
+| Term | Definition |
+|------|-----------|
+| **Candidate** | Person applying for a position at SFSPL |
+| **Application** | Candidate's submission for a specific role |
+| **Screened Candidate** | Pre-qualified candidate selected by recruiter |
+| **Walk-in Candidate** | Candidate applying on-the-spot at interview venue |
+| **QR Check-in** | Candidate scans QR code at interview venue |
+| **Form-1** | Basic personal and professional details |
+| **Form-2** | Address, qualifications, skills, documents |
+| **Form-3** | Interview evaluation by interviewers |
+| **Form-4** | Onboarding details (bank, emergency contact) |
+| **Offer Letter** | Official employment offer document |
+| **Onboarding** | Process of integrating new employee into organization |
+| **RBAC** | Role-Based Access Control |
+| **OTP** | One-Time Password for authentication |
+
+---
+
+## 2. FUNCTIONAL REQUIREMENTS
+
+### 2.1 AUTHENTICATION & AUTHORIZATION (FR-1)
+
+#### FR-1.1: Candidate Authentication via OTP
+- **Requirement ID:** FR-1.1
+- **Priority:** HIGH
+- **Description:** Enable passwordless login for candidates using mobile OTP
+
+**Functional Specifications:**
+
+**Candidate Login Flow:**
+1. Candidate navigates to login page
+2. Enters 10-digit mobile number (Indian format)
+3. System validates phone number format
+4. System sends 6-digit OTP via WhatsApp
+5. OTP valid for 5 minutes (single-use)
+6. Candidate enters OTP on verification screen
+7. System validates OTP (max 3 failed attempts)
+8. On success: System creates session and redirects to dashboard
+9. On failure: Display error message, allow retry (cooldown after 3 failures: 15 minutes)
+
+**Key Requirements:**
+- Mobile number format: 10 digits, starts with 6-9
+- OTP format: 6 digits, numeric only
+- OTP validity: 5 minutes
+- Max retry attempts: 3
+- Cooldown period: 15 minutes after max failures
+- Session duration: 24 hours
+- Session timeout: On browser close or manual logout
+
+**Error Handling:**
+- Invalid mobile format: "Please enter a valid 10-digit mobile number"
+- OTP expired: "OTP has expired. Please request a new one"
+- Invalid OTP: "Invalid OTP. {attempts_remaining} attempts remaining"
+- Max attempts exceeded: "Too many failed attempts. Please try again after 15 minutes"
+- WhatsApp delivery failure: "Unable to send OTP. Please try again"
+
+---
+
+#### FR-1.2: HR Staff Authentication with Email/Password
+- **Requirement ID:** FR-1.2
+- **Priority:** HIGH
+- **Description:** Enable secure login for HR staff using email and password
+
+**Functional Specifications:**
+
+**HR Staff Login Flow:**
+1. Staff member navigates to login page
+2. Enters email address
+3. Enters password
+4. System validates credentials against database
+5. If MFA enabled: Request 6-digit TOTP code from authenticator app
+6. On success: System creates session and redirects to role-specific dashboard
+7. On failure: Display error message
+
+**Password Requirements:**
+- Minimum 8 characters
+- Must contain uppercase letter (A-Z)
+- Must contain lowercase letter (a-z)
+- Must contain digit (0-9)
+- Must contain special character (@$!%*?&)
+- Cannot match last 3 passwords
+- Must be changed every 90 days
+- Password reset link valid for 30 minutes
+
+**Session Management:**
+- Session duration: 8 hours
+- Idle timeout: 2 hours for regular staff, 30 minutes for HR Manager
+- Concurrent session limit: 3 devices maximum
+- Automatic logout on idle timeout
+
+**Multi-Factor Authentication (MFA):**
+- Method: TOTP (Time-based One-Time Password, RFC 6238)
+- QR code provided for secret key setup
+- 6-digit code required every login
+- Backup codes: 10 single-use codes provided during setup
+- Mandatory for: HR Manager role
+- Optional for: Other HR staff
+
+**Error Handling:**
+- Invalid email format: "Please enter a valid email address"
+- Invalid credentials: "Invalid email or password"
+- Account locked: "Account locked due to multiple failed attempts. Contact admin"
+- MFA code invalid: "Invalid authentication code. Please try again"
+- MFA code expired: "Authentication code expired. Please try again"
+- Session expired: "Your session has expired. Please login again"
+
+---
+
+#### FR-1.3: Role-Based Access Control (RBAC)
+- **Requirement ID:** FR-1.3
+- **Priority:** HIGH
+- **Description:** Enforce role-based permissions across all system features
+
+**Functional Specifications:**
+
+**System Roles (7 Total):**
+
+1. **Super Admin**
+   - System configuration and settings management
+   - User provisioning (create, edit, delete users)
+   - Complete audit log access
+   - Global data access (all candidates, all departments)
+   - Role and permission management
+
+2. **HR Manager**
+   - Hiring decision approval/rejection
+   - Offer letter generation and approval
+   - Background verification approval and tracking
+   - Onboarding checklist creation and monitoring
+   - Dashboard access (all or assigned departments)
+   - Report generation and analytics
+   - Department-level data visibility
+
+3. **Recruiter**
+   - Candidate screening and shortlist/reject decisions
+   - Interview scheduling and coordination
+   - QR code generation for interviews
+   - Candidate communication (email, WhatsApp)
+   - Data access: Only assigned candidates
+   - Basic reporting
+
+4. **Interviewer**
+   - Form-3 (interview evaluation) submission only
+   - QR code validation at interview venue
+   - View candidate profiles for assigned interviews only
+   - No data modification permissions
+
+5. **Background Verifier**
+   - Background verification status updates
+   - Document collection and verification
+   - Data access: Only assigned candidates
+   - Background verification report submission
+   - No hiring decisions
+
+6. **Compliance Officer**
+   - Read-only access to all data
+   - Audit log review and export
+   - Compliance report generation
+   - No data modification permissions
+
+7. **Candidate**
+   - View own profile and application status
+   - Form submission (Form-1, Form-2, Form-4)
+   - Document upload and management (own documents only)
+   - Offer acceptance/rejection
+   - Cannot view other candidates' data
+
+**Access Control Implementation:**
+- Role-based permissions enforced at API level
+- Row-level security: Data access restricted by role
+- Principle of least privilege: Default deny, explicit allow
+- Permission check on every API request
+- All access attempts logged in audit trail
+- Quarterly access review and certification
+
+**Data Scope by Role:**
+
+| Role | Candidate Data Access | Scope |
+|------|----------------------|-------|
+| Super Admin | All candidates | Global |
+| HR Manager | All or department-specific | Department/Global |
+| Recruiter | Assigned candidates | Assigned only |
+| Interviewer | Interview-assigned candidates | Interview-specific |
+| BG Verifier | Assigned candidates | Assigned only |
+| Compliance | All candidates | Global (read-only) |
+| Candidate | Own profile only | Self only |
+
+---
+
+### 2.2 CANDIDATE MANAGEMENT (FR-2)
+
+#### FR-2.1: Candidate Registration via WhatsApp
+- **Requirement ID:** FR-2.1
+- **Priority:** HIGH
+- **Description:** Enable candidates to initiate application via WhatsApp bot message
+
+**Functional Specifications:**
+
+**Registration Trigger:**
+- Candidate sends any message (e.g., "Hi", "Apply", "Job") to WhatsApp business number
+- System receives webhook from WhatsApp Business API
+- System extracts phone number from message
+
+**Registration Process:**
+1. Extract phone number from WhatsApp message
+2. Normalize phone format to +91XXXXXXXXXX
+3. Check if phone number exists in candidate database
+   - If exists: Retrieve candidate_id, update last_contact_at
+   - If new: Create new candidate record
+4. Check 30-day cooldown rule:
+   - Query for applications from same phone number for same role within last 30 days
+   - If found: Send cooldown message with wait date
+   - If not found: Send Form-1 link
+5. Create candidate_applications record with status "Initiated"
+6. Generate Form-1 URL with secure token
+7. Send WhatsApp message with Form-1 link and instructions
+
+**30-Day Cooldown Rule:**
+- Same candidate cannot apply for same role within 30 days
+- Different roles are allowed within 30 days
+- Cooldown resets 30 days after initial application
+- User receives message: "You have already applied for this role. Please wait until [date]"
+
+**WhatsApp Message Format:**
+```
+Hi! Thank you for your interest in [Role] at SFSPL.
+
+Please fill out this form to complete your application:
+[Form-1 Link]
+
+This should take about 5-7 minutes.
+
+Need help? Reply with "Help"
+```
+
+**Acceptance Criteria:**
+- Form-1 link successfully sent to valid phone numbers
+- Cooldown rule prevents duplicate applications
+- WhatsApp delivery confirmed
+- Error handling for invalid numbers or API failures
+
+---
+
+#### FR-2.2: Form-1 - Basic Personal & Professional Details
+- **Requirement ID:** FR-2.2
+- **Priority:** HIGH
+- **Description:** Collect candidate's basic information through Form-1
+
+**Functional Specifications:**
+
+**Form-1 Fields:**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Name | Text | Yes | 2-100 chars, letters only |
+| Email | Email | Yes | Valid email format |
+| Phone Number | Text | Yes | 10 digits, pre-filled from WhatsApp |
+| Date of Birth | Date | Yes | Age between 18-65 years |
+| Gender | Select | Yes | Male, Female, Other |
+| Current Location | Text | Yes | 1-50 chars |
+| Current Company | Text | No | Max 100 chars |
+| Current Designation | Text | Yes | Max 100 chars |
+| Years of Experience | Number | Yes | 0-50 years |
+| Desired Role | Select | Yes | Dropdown from roles table |
+| Highest Qualification | Select | Yes | 12th, Graduate, Post-Graduate, Doctorate |
+| Notice Period | Select | No | Immediate, 15d, 1m, 2m, 3m |
+
+**Eligibility Check (On Form-1 Submission):**
+
+System must validate the following criteria:
+
+1. **Qualification Match:** Candidate's qualification meets role requirement
+2. **Experience Range:** Candidate's experience within role requirement (e.g., 2-5 years)
+3. **Age Validation:** Candidate age between 18-65 years
+4. **30-Day Cooldown:** No application for same role within 30 days
+
+**Eligibility Results:**
+
+**If All Checks Pass:**
+- Status updated to "Eligible - Pending Screening"
+- Confirmation email sent to candidate
+- WhatsApp message sent: "✅ Application received! We'll review and get back within 2-3 days"
+- Data stored in database
+- Recruiter receives notification to screen
+
+**If Any Check Fails:**
+- Status updated to "Rejected - [Reason]"
+- Reason displayed to candidate
+- Email sent with rejection reason
+- WhatsApp message sent: "Thank you for applying. Unfortunately, you don't meet requirements for this role at this time"
+- System suggests alternative roles if applicable
+
+**Form Features:**
+- Mobile-responsive Streamlit interface
+- Progress indicator: "Step 1 of 4"
+- Auto-save draft every 30 seconds
+- Field-level validation with inline error messages
+- Submit button disabled until all required fields valid
+- Ability to resume from draft if form incomplete
+
+**User Experience Requirements:**
+- Form should load in < 2 seconds
+- Each field should validate immediately on blur
+- Error messages should be clear and actionable
+- Progress should be visible to user
+- Draft should survive browser refresh
+
+---
+
+#### FR-2.3: Form-2 - Address, Qualifications & Skills
+- **Requirement ID:** FR-2.3
+- **Priority:** HIGH
+- **Description:** Collect detailed address, education, skills, and supporting documents
+
+**Functional Specifications:**
+
+**When Form-2 is Presented:**
+- **For Screened Candidates:** After interview scheduled, before interview (via email/WhatsApp)
+- **For Walk-in Candidates:** After QR check-in at interview venue (same day as interview)
+
+**Form-2 Sections:**
+
+**Section 1: Address Details**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Current Address Line 1 | Text | Yes | 1-200 chars |
+| Current Address Line 2 | Text | No | 1-200 chars |
+| Current City | Text | Yes | 1-50 chars |
+| Current State | Select | Yes | Dropdown of Indian states |
+| Current Pincode | Text | Yes | Exactly 6 digits |
+| Permanent Same as Current | Checkbox | - | If checked, copy current to permanent |
+| Permanent Address Line 1 | Text | Conditional | Required if not same as current |
+| Permanent Address Line 2 | Text | No | 1-200 chars |
+| Permanent City | Text | Conditional | Required if not same as current |
+| Permanent State | Select | Conditional | Required if not same as current |
+| Permanent Pincode | Text | Conditional | Required if not same as current |
+
+**Section 2: Educational Qualifications** (Multiple entries allowed)
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Degree/Qualification | Select | Yes | 12th, Graduate, Post-Grad, Doctorate |
+| Degree Name | Text | Yes | 1-100 chars (e.g., "B.Tech CSE") |
+| University/Institute | Text | Yes | 1-100 chars |
+| Year of Passing | Number | Yes | 1970 to current year |
+| CGPA/Percentage | Number | Yes | 0-100 or 0-10 based on type |
+| Grade Type | Select | Yes | Percentage or CGPA |
+
+**Section 3: Skills** (Multiple selections)
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Skill Name | Multi-select | Yes | Predefined skill list |
+| Proficiency | Select | Yes | Beginner, Intermediate, Advanced, Expert |
+
+**Predefined Skills:**
+- Technical: Python, Java, SQL, AWS, Data Analysis, Excel, etc.
+- Soft Skills: Communication, Leadership, Teamwork, Problem-solving, etc.
+- Domain: Finance, HR, IT, Operations, etc.
+
+**Section 4: Document Uploads**
+
+| Document Type | Required | File Types | Max Size | Purpose |
+|---------------|----------|-----------|----------|---------|
+| Resume | Yes | PDF, DOC, DOCX | 5 MB | Employment history |
+| Photo | Yes | JPG, PNG | 2 MB | Identity verification |
+| Qualification Certificates | Yes | PDF, JPG, PNG | 5 MB each | Education proof |
+| Experience Letter | No | PDF, JPG | 5 MB | Employment verification |
+| ID Proof | Yes | PDF, JPG, PNG | 2 MB | Identity document |
+
+**Document Upload Requirements:**
+- Drag-and-drop interface
+- File type validation
+- File size validation
+- Upload progress bar
+- Preview capability
+- Multiple file support (for certificates)
+- Virus scan (optional, Phase 2)
+
+**Form-2 Business Rules:**
+- All required documents must be uploaded before submission
+- File formats limited to specified types
+- File sizes must not exceed limits
+- Pincode must be exactly 6 digits
+- Year of passing must be realistic (not future dates)
+- Cannot upload duplicates of same document type
+
+**Acceptance Criteria:**
+- Form-2 data persists in database
+- Document URLs stored with metadata
+- Verification status set to "Unverified"
+- Candidate receives confirmation email/WhatsApp
+- HR can view all collected information
+
+---
+
+#### FR-2.4: Form-4 - Onboarding & Final Details
+- **Requirement ID:** FR-2.4
+- **Priority:** MEDIUM
+- **Description:** Collect final onboarding details post-induction (Form-4)
+
+**Functional Specifications:**
+
+**When Form-4 is Shown:**
+- After candidate successfully scans induction QR code on joining day
+- One-time submission (final form)
+- Must be completed before day-end
+
+**Form-4 Sections:**
+
+**Section 1: Bank Account Details**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Account Number | Text | Yes | 9-18 digits |
+| Confirm Account Number | Text | Yes | Must match account number |
+| IFSC Code | Text | Yes | 11 chars, format: XXXX0XXXXXX |
+| Account Holder Name | Text | Yes | 1-100 chars |
+| Bank Name | Text | Yes | 1-100 chars |
+| Branch Name | Text | Yes | 1-100 chars |
+| Account Type | Select | Yes | Savings or Current |
+
+**Section 2: Emergency Contact**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Contact Person Name | Text | Yes | 1-100 chars |
+| Relationship | Select | Yes | Spouse, Parent, Sibling, Friend, Other |
+| Phone Number | Text | Yes | 10 digits |
+| Address | Text | No | 1-200 chars |
+
+**Section 3: Address Confirmation**
+
+| Field | Type | Required | Purpose |
+|-------|------|----------|---------|
+| Permanent Address Confirmed | Checkbox | Yes | Confirm address accuracy |
+| Address Update (if changed) | Text | No | Update if address changed |
+
+**Section 4: Health Declaration** (Optional)
+
+| Field | Type | Required | Max Length |
+|-------|------|----------|-----------|
+| Blood Group | Select | No | A+, A-, B+, B-, AB+, AB-, O+, O- |
+| Medical Conditions | Text | No | 500 chars |
+| Allergies | Text | No | 300 chars |
+| Emergency Medical Info | Text | No | 500 chars |
+
+**Section 5: IT Preferences** (Optional)
+
+| Field | Type | Required |
+|-------|------|----------|
+| Laptop Preference | Select | No (Options: Windows, Mac, Linux) |
+| Monitor Preference | Select | No (Options: Single, Dual, Triple) |
+| Keyboard/Mouse Type | Select | No (Options: Wired, Wireless) |
+| Software Requirements | Text | No (Max 300 chars) |
+
+**Form-4 Requirements:**
+- All bank fields must be filled and validated
+- Bank account numbers must be confirmed (match check)
+- IFSC code must follow Indian standard format
+- Emergency contact phone must be valid
+- Form cannot be submitted until all required fields completed
+- Data must be encrypted before storage (bank details, phone)
+
+**Post-Submission Actions:**
+- Update candidate status to "Onboarding Complete"
+- Export data to HRMS/Payroll system
+- Send congratulatory message to candidate
+- Send completion notification to HR Manager
+- Generate employment letter (optional)
+- Archive candidate record from active pipeline
+
+**Acceptance Criteria:**
+- Form-4 data successfully stored in database
+- Sensitive fields (bank account, phone) encrypted
+- Data exported to HRMS within 1 hour
+- Candidate receives confirmation
+- Onboarding marked 100% complete
+
+---
+
+#### FR-2.5: Candidate Status Tracking
+- **Requirement ID:** FR-2.5
+- **Priority:** MEDIUM
+- **Description:** Provide real-time status visibility to candidates with timeline view
+
+**Functional Specifications:**
+
+**Status Lifecycle:**
+
+The system must support the following status flow:
+
+1. **Initiated** → 2. **Form-1 Submitted** → 3. **Eligible - Pending Screening** → 4. **Screened (Shortlisted/Rejected)** → 5. **Interview Scheduled** → 6. **Interview Complete - Forms Pending** → 7. **Interview Complete - Evaluation Pending** → 8. **Evaluation Complete - Decision Pending** → 9. **Selected/Rejected** → 10. **BG Verification** → 11. **Offer Sent** → 12. **Offer Accepted/Rejected** → 13. **Onboarding** → 14. **Onboarding Complete**
+
+**Status Display Requirements:**
+
+**Timeline View:**
+- Vertical timeline showing all status milestones
+- Each milestone displays: Status name, Date/Time, Description
+- Completed stages marked with green checkmark
+- Current stage highlighted with blue indicator
+- Pending stages shown in gray
+- Clear visual distinction between stages
+
+**Status Badge:**
+- Color-coded badge at top of page
+- Green: Success states (Selected, Offer Accepted, Onboarding Complete)
+- Blue: In-progress states (Interviews, Evaluation)
+- Orange: Pending action needed
+- Red: Failure states (Rejected, BG Failed)
+
+**Next Action Indicator:**
+- Clear call-to-action based on current status
+- Examples:
+  - "Upload Documents" (if Form-2 pending)
+  - "Wait for Interview Schedule" (if shortlisted)
+  - "View Interview Details" (if interview scheduled)
+  - "Accept Offer" (if offer sent)
+  - "Complete Form-4" (if onboarding started)
+
+**Rejection Display:**
+- If status = "Rejected": Show empathetic message
+- Display rejection reason (template or custom)
+- Suggest alternatives:
+  - Apply for different role
+  - Reapply after 30 days
+  - Provide feedback/appeal option
+
+**Status Refresh:**
+- Status refreshes automatically every 30 seconds
+- Manual refresh button available
+- Timestamp of last update shown
+- Network error handling (show cached status with warning)
+
+**Acceptance Criteria:**
+- All status changes visible within 30 seconds
+- Timeline displays all milestones with dates
+- Rejection reasons clearly communicated
+- Next action always clear to candidate
+- Mobile-responsive display
+
+---
+
+#### FR-2.6: Document Management & Verification
+- **Requirement ID:** FR-2.6
+- **Priority:** HIGH
+- **Description:** Centralized secure document storage with verification tracking
+
+**Functional Specifications:**
+
+**Document Types & Requirements:**
+
+| Document Type | Required | Uploader | Verifier | Retention |
+|---------------|----------|----------|----------|-----------|
+| Resume | Yes | Candidate | Recruiter | 2 years |
+| Photo | Yes | Candidate | Recruiter | 2 years |
+| Qualification Certificate | Yes | Candidate | BG Verifier | 2 years |
+| Experience Letter | No | Candidate | BG Verifier | 2 years |
+| ID Proof | Yes | Candidate | BG Verifier | 2 years |
+| Offer Letter Signed | Yes | Candidate | HR Manager | 7 years |
+| Onboarding Documents | Varies | Candidate/HR | HR Manager | 7 years |
+
+**Document Upload Process:**
+
+1. User selects document type from dropdown
+2. User uploads file (drag-and-drop or file picker)
+3. System validates: File type, file size, magic number
+4. System generates signed URL for direct upload to storage
+5. User uploads file directly to Supabase Storage
+6. System stores document metadata (name, URL, size, timestamp)
+7. Document status set to "Unverified"
+8. Confirmation message displayed to user
+
+**Upload Validations:**
+- File type must match allowed types (PDF, DOC, DOCX, JPG, PNG)
+- File size must not exceed limits (max 5 MB)
+- File must not be corrupted or empty
+- Virus scan performed (future enhancement)
+- Duplicate document type replaces previous version (with version history)
+
+**Document Verification Process:**
+
+1. HR/BG Officer views document list
+2. Clicks "Verify" on document
+3. Document preview opens (PDF viewer or image viewer)
+4. Officer reviews document content
+5. Officer performs one of: Verify, Reject, Request Reupload
+6. If Verify: Status changed to "Verified", notes added
+7. If Reject: Status changed to "Rejected", reason provided, candidate notified
+8. If Reupload Requested: Candidate notified, document marked pending
+9. Verification timestamp and officer ID recorded
+
+**Document Version Control:**
+- When candidate reuploads same document type, new version created
+- Previous versions retained with "Superseded" status
+- Version numbering: resume_v1.pdf, resume_v2.pdf
+- Access to all versions available to HR/Compliance
+
+**Access Control:**
+- Candidate: View/download own documents
+- Recruiter: View documents of assigned candidates
+- HR Manager: View all documents
+- BG Verifier: View assigned candidates' documents
+- Compliance Officer: Read-only access to all documents
+- Document download requires authentication
+
+**Document Storage Requirements:**
+- Location: Supabase Storage (S3-compatible)
+- Encryption: AES-256 at rest
+- Access: Private (signed URLs for access)
+- Folder structure: `/candidate_id/application_id/document_type/filename`
+- Automatic backups: Daily
+- Virus scanning: Optional, Phase 2
+
+**Auto-Cleanup & Retention:**
+- Rejected candidates: Documents archived after 2 years
+- Hired employees: Documents retained until 2 years post-exit
+- Documents marked for deletion move to archive table
+- Complete deletion after 7-year retention
+- Audit trail maintained for all document actions
+
+**Acceptance Criteria:**
+- All documents securely stored in Supabase
+- Document verification workflow functional
+- Version history maintained
+- Access control enforced
+- Automatic cleanup after retention period
+- All document actions audited
+
+---
+
+### 2.3 HR SCREENING & SCHEDULING (FR-3)
+
+#### FR-3.1: Candidate Screening Dashboard
+- **Requirement ID:** FR-3.1
+- **Priority:** HIGH
+- **Description:** Enable recruiters to review and make screening decisions on applications
+
+**Functional Specifications:**
+
+**Dashboard Components:**
+
+**1. Application List:**
+- Displays all applications in "Form-1 Submitted" or "Eligible" status
+- Shows candidates assigned to recruiter
+- Sortable columns: Name, Applied Role, Experience, Applied Date, Status
+- Filterable by: Role, Experience Level, Location, Applied Date Range, Status
+- Pagination: 20 records per page
+
+**2. Candidate Quick View:**
+- Name and contact information
+- Applied role and experience
+- Qualification level
+- Current location
+- Application date
+- Eligibility check result
+- Resume download link
+
+**3. Bulk Actions:**
+- Select multiple candidates using checkboxes
+- Bulk shortlist or reject action
+- Bulk download resume zip file
+- Confirmation dialog before bulk action
+
+**4. Quick Stats:**
+- Total applications (this week)
+- Pending review count
+- Shortlisted (this week)
+- Rejected (this week)
+
+**Screening Decision Actions:**
+
+**For Each Candidate:**
+
+1. **View Profile:** Open full candidate details in modal
+   - All Form-1 data
+   - Resume preview/download
+   - Application date and status
+   - Eligibility check results
+
+2. **Shortlist Decision:**
+   - Click "Shortlist" button
+   - Candidate status changed to "Shortlisted"
+   - Interview scheduling form opens
+   - Or "Schedule Later" to shortlist without scheduling
+
+3. **Reject Decision:**
+   - Click "Reject" button
+   - Modal opens with rejection reason dropdown
+   - Predefined reasons: Insufficient Experience, Qualification Mismatch, Location Preference Mismatch, Overqualified, Other
+   - Optional custom reason text field
+   - On confirm: Status changed to "Rejected", automatic rejection email/WhatsApp sent to candidate
+
+**Dashboard Features:**
+- Search candidates by name or phone
+- Export candidates list to Excel
+- Download bulk resumes
+- Interview scheduling from dashboard
+- Reassign candidates to other recruiters (admin only)
+- View candidate history/notes
+
+**Acceptance Criteria:**
+- Recruiter can view assigned applications
+- Filtering and sorting work correctly
+- Shortlist/reject decisions saved immediately
+- Rejection notifications sent automatically
+- Dashboard loads in < 2 seconds
+- Bulk actions execute successfully
+
+---
+
+#### FR-3.2: Interview Scheduling
+- **Requirement ID:** FR-3.2
+- **Priority:** HIGH
+- **Description:** Schedule interviews with date/time, interviewer assignment, and venue details
+
+**Functional Specifications:**
+
+**Interview Scheduling Form:**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|-----------|
+| Interview Date | Date | Yes | Future date, not weekend |
+| Interview Time | Time | Yes | Business hours 9 AM - 6 PM |
+| Interview Duration | Select | Yes | 30min, 45min, 1h, 1.5h |
+| Venue Location | Select | Yes | Head Office, Branch 1, Branch 2, etc. |
+| Venue Address | Text | Auto-filled | Based on location |
+| Room/Cabin Number | Text | No | Conference Room A, Meeting Room 3, etc. |
+| Parking Available | Checkbox | - | Tick if parking available |
+| Parking Instructions | Text | No | Max 200 chars |
+| Reporting Time | Time | Yes | Default: 15 min before interview |
+| Primary Interviewer | Select | Yes | Dropdown of available interviewers |
+| Secondary Interviewer | Select | No | Optional second interviewer |
+| Tertiary Interviewer | Select | No | Optional third interviewer |
+| Interview Type | Select | Yes | Technical, HR, Managerial, Panel |
+| Internal Notes | Text | No | Max 500 chars (visible to interviewers) |
+
+**Scheduling Business Rules:**
+
+1. **Date Rules:**
+   - Interview date must be minimum 2 days from today
+   - Maximum 30 days in future
+   - No interviews on weekends (Saturday/Sunday)
+   - No interviews on company holidays
+
+2. **Time Rules:**
+   - Business hours only: 9 AM to 6 PM
+   - No overlapping interview times in same venue
+   - Minimum 30 minutes between consecutive interviews in same venue
+
+3. **Interviewer Availability:**
+   - Max 4 interviews per interviewer per day
+   - Check for schedule conflicts
+   - Prevent double-booking
+   - Show alternative available slots if conflict detected
+
+4. **Venue Capacity:**
+   - Check venue availability for selected date/time
+   - Show available venues if selected venue unavailable
+
+**Panel Composition Rules:**
+
+| Interview Type | Panel Requirements |
+|----------------|-------------------|
+| Technical | 1 Technical Expert (required) |
+| HR | 1 HR Manager (required) + 1 optional |
+| Managerial | Hiring Manager (required) + Senior Manager (optional) |
+| Panel | 2-3 members (Tech + HR + Manager) |
+
+**Scheduling Workflow:**
+
+1. Recruiter selects candidate to schedule
+2. Opens interview scheduling form with candidate details
+3. Fills all required fields
+4. System checks interviewer availability in real-time
+5. System validates all business rules
+6. On submit: Interview record created
+7. QR code generated (see FR-4.1)
+8. Notifications triggered (see FR-3.2.1)
+
+**Rescheduling:**
+- Recruiters can reschedule up to 24 hours before interview
+- Same form with prefilled data
+- Updates interview record
+- Sends reschedule notification to all parties
+
+**Interview Status:**
+- **Scheduled:** Interview created and confirmed
+- **In Progress:** During interview (after QR check-in)
+- **Completed:** Interview finished, evaluation pending
+- **Cancelled:** Interview cancelled by HR
+
+**Acceptance Criteria:**
+- Interview scheduled with all details
+- Interviewer availability validated
+- Business rules enforced
+- Interview record created in database
+- Notifications sent to all parties
+- Interviewer conflicts prevented
+- Rescheduling works within 24-hour window
+
+---
 
 #### FR-3.2.1: Interview Scheduling Notifications
 - **Requirement ID:** FR-3.2.1
 - **Priority:** HIGH
-- **Description:** Automated notifications triggered on interview scheduling
+- **Description:** Automated notifications sent on interview scheduling
 
-**Notification Flow:**
+**Functional Specifications:**
 
-**1. Candidate Notification (WhatsApp + Email):**
+**Notification Recipients & Content:**
 
-WhatsApp Message:
-```
-🎯 *Interview Scheduled!*
+**1. To Candidate (WhatsApp + Email):**
 
-Dear [Name],
+WhatsApp Content:
+- Interview scheduled notification
+- Date, Time, Venue Address
+- Parking instructions
+- Reporting time
+- QR code image for check-in
+- Documents to bring
+- Contact information for queries
 
-Your interview for *[Role]* is scheduled:
+Email Content:
+- Professional HTML email format
+- All details in table format
+- QR code embedded as image
+- Venue map link (if available)
+- Contact information
+- Professional signature
 
-📅 *Date:* [Day, DD MMM YYYY]
-🕐 *Time:* [HH:MM AM/PM]
-⏰ *Please arrive by:* [HH:MM AM/PM]
-📍 *Venue:* [Location Name]
-📌 *Address:* [Full Address]
+**2. To Interviewers (Email):**
 
-🚗 *Parking:* [Instructions]
+Email Content:
+- Interview assignment confirmation
+- Candidate details (name, experience, current role)
+- Interview date, time, venue, room
+- Candidate profile link
+- Resume link
+- Panel member names and roles
+- Internal notes from recruiter
+- Evaluation form link
 
-*On arrival:*
-1. Report to reception
-2. Scan the QR code below ⬇️
+**3. Interview Reminders (Auto-scheduled):**
 
-[QR Code Image]
+- **24 Hours Before:** WhatsApp + Email reminder to candidate
+- **4 Hours Before:** Email reminder to interviewers
+- **15 Minutes Before:** SMS reminder to candidate (optional)
 
-*Documents to bring:*
-✓ Valid ID proof
-✓ Printed resume
-✓ Certificates (if available)
+**Notification Delivery:**
+- Via n8n automation workflows
+- WhatsApp Business API for WhatsApp messages
+- Email service for emails
+- SMS service for SMS (if enabled)
+- All notifications logged in database
+- Retry mechanism: 3 automatic retries on failure
 
-📞 Questions? Call [HR Contact]
-
-All the best! 🌟
-HR Team, SFSPL
-```
-
-Email Template (HTML):
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .header { background-color: #007bff; color: white; padding: 20px; }
-        .content { padding: 20px; }
-        .qr-section { text-align: center; margin: 30px 0; }
-        .footer { background-color: #f8f9fa; padding: 15px; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Interview Scheduled - SFSPL</h1>
-    </div>
-    <div class="content">
-        <p>Dear [Candidate Name],</p>
-        
-        <p>Your interview for <strong>[Role]</strong> has been scheduled. Please find the details below:</p>
-        
-        <table style="margin: 20px 0; border-collapse: collapse;">
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Date:</td>
-                <td style="padding: 8px;">[Day, DD MMM YYYY]</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Time:</td>
-                <td style="padding: 8px;">[HH:MM AM/PM]</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Reporting Time:</td>
-                <td style="padding: 8px;">[HH:MM AM/PM] (15 minutes early)</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Duration:</td>
-                <td style="padding: 8px;">[Duration]</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Venue:</td>
-                <td style="padding: 8px;">[Location Name]<br>[Full Address]</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; font-weight: bold;">Room:</td>
-                <td style="padding: 8px;">[Room Number/Name]</td>
-            </tr>
-        </table>
-        
-        <div class="qr-section">
-            <h3>QR Code for Check-in</h3>
-            <p>Please scan this QR code at the reception on your arrival:</p>
-            <img src="[QR_CODE_IMAGE_URL]" alt="Interview QR Code" width="250" height="250">
-        </div>
-        
-        <h3>Documents to Bring:</h3>
-        <ul>
-            <li>Valid government-issued ID proof (Aadhar, PAN, Driving License)</li>
-            <li>Printed copy of your resume</li>
-            <li>Educational and experience certificates (if available)</li>
-        </ul>
-        
-        <h3>Parking Information:</h3>
-        <p>[Parking Instructions]</p>
-        
-        <h3>Contact Information:</h3>
-        <p>For any queries, please contact:<br>
-        HR Team: [HR Email] | [HR Phone]</p>
-        
-        <p style="margin-top: 30px;">We look forward to meeting you!</p>
-        
-        <p>Best regards,<br>
-        <strong>HR Team<br>
-        Sampurna Financial Services Pvt. Ltd.</strong></p>
-    </div>
-    <div class="footer">
-        <p style="font-size: 12px; color: #6c757d;">
-            This is an automated message. Please do not reply to this email.<br>
-            For queries, contact [HR Email]
-        </p>
-    </div>
-</body>
-</html>
-```
-
-**2. Interviewer Notification (Email):**
-
-```html
-Subject: Interview Assigned - [Candidate Name] for [Role] on [Date]
-
-Dear [Interviewer Name],
-
-You have been assigned to interview [Candidate Name] for the [Role] position.
-
-Interview Details:
-------------------
-Date: [Day, DD MMM YYYY]
-Time: [HH:MM AM/PM]
-Duration: [Duration]
-Venue: [Location], [Room Number]
-
-Candidate Profile:
-------------------
-Name: [Full Name]
-Experience: [X years]
-Current Company: [Company]
-Current Designation: [Designation]
-Qualification: [Highest Qualification]
-
-[View Full Profile Button]
-[Download Resume Button]
-
-Panel Members:
---------------
-- [Interviewer 1] - [Role]
-- [Interviewer 2] - [Role]
-- [Interviewer 3] - [Role]
-
-Internal Notes:
----------------
-[Recruiter Notes]
-
-Please review the candidate's profile and resume before the interview. After the interview, submit your evaluation using Form-3 within 24 hours.
-
-[Submit Evaluation Form Link]
-
-This interview has been added to your calendar.
-
-Thank you,
-HR Team
-SFSPL
-```
-
-**3. Reminder Notifications:**
-
-**24 Hours Before (Candidate - WhatsApp + Email):**
-```
-📅 *Interview Reminder*
-
-Hi [Name],
-
-This is a reminder that your interview is scheduled tomorrow:
-
-🕐 Time: [HH:MM AM/PM]
-📍 Venue: [Location]
-
-Please ensure:
-✓ You arrive by [Reporting Time]
-✓ Bring required documents
-✓ Keep your QR code ready
-
-See you tomorrow! 👋
-```
-
-**4 Hours Before (Candidate - SMS Optional):**
-```
-Reminder: Your interview at SFSPL is today at [Time]. Venue: [Location]. Please arrive by [Reporting Time]. Good luck!
-```
-
-**2 Hours Before (Interviewer - Email):**
-```
-Subject: Interview Starting Soon - [Candidate Name]
-
-Dear [Interviewer],
-
-This is a reminder that you have an interview scheduled in 2 hours:
-
-Candidate: [Name]
-Time: [HH:MM AM/PM]
-Venue: [Location], [Room]
-
-Profile: [Link]
-Resume: [Download]
-
-See you there!
-```
-
-**Database Tables:**
-- `notifications` (notification_id, recipient_type, recipient_id, notification_type, template_name, subject, message, status, sent_at, delivered_at, read_at)
-- `notification_templates` (template_id, template_name, channel, subject, body, variables)
-
-**API Endpoints:**
-- `POST /api/notifications/send` - Send notification
-- `POST /api/notifications/schedule` - Schedule reminder notification
-- `GET /api/notifications/status?notification_id={id}` - Check delivery status
-
-**n8n Automation Workflows:**
-
-**Workflow 1: Interview Scheduled Notifications**
-```
-Trigger: Webhook from FastAPI (/api/webhooks/interview-scheduled)
-↓
-Parse Interview Data
-↓
-[Parallel Branches]
-├─ Branch 1: Send WhatsApp to Candidate (with QR)
-├─ Branch 2: Send Email to Candidate (with QR)
-├─ Branch 3: Send Email to All Interviewers
-└─ Branch 4: Add to Google Calendar (Optional)
-↓
-Log Notification Status → Database
-```
-
-**Workflow 2: Interview Reminders**
-```
-Trigger: Scheduled (runs hourly)
-↓
-Query: Interviews in next 24 hours (not reminded)
-↓
-For Each Interview:
-  ├─ Send WhatsApp Reminder to Candidate
-  ├─ Send Email Reminder to Candidate
-  └─ Mark as Reminded
-↓
-Query: Interviews in next 2 hours
-↓
-For Each Interview:
-  └─ Send Email Reminder to Interviewers
-```
+**Acceptance Criteria:**
+- Interview invitation sent to candidate within 5 minutes of scheduling
+- Interviewer assignment emails sent to all panel members
+- Reminders scheduled and delivered on time
+- All notifications logged with delivery status
+- Failed notifications queued for retry
 
 ---
 
 #### FR-3.3: Interview Panel Management
 - **Requirement ID:** FR-3.3
 - **Priority:** MEDIUM
-- **Description:** Manage interviewer pool, availability, and panel composition
+- **Description:** Manage interviewer availability, panel composition, and interview load
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**1. Interviewer Master Data:**
+**Interviewer Master Data:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `user_id` | UUID | Reference to users table |
-| `full_name` | Text | Interviewer name |
-| `department` | Text | Department (Engineering, HR, Finance, etc.) |
-| `expertise` | Array | Technical skills/domains |
-| `interview_types` | Array | Types: Technical, HR, Managerial |
-| `max_interviews_per_day` | Integer | Default: 4 |
-| `available_days` | Array | Mon-Fri (configurable) |
-| `unavailable_dates` | Array | On leave, OOO dates |
-| `is_active` | Boolean | Active/Inactive status |
+| Information | Type | Purpose |
+|-------------|------|---------|
+| Name | Text | Identification |
+| Department | Select | Department assignment |
+| Expertise/Skills | Multi-select | Technical/domain skills |
+| Interview Types | Multi-select | Technical, HR, Managerial |
+| Max Interviews/Day | Number | Load balancing (default: 4) |
+| Available Days | Multi-select | Mon-Fri by default |
+| Status | Select | Active/Inactive |
 
-**2. Panel Composition Rules:**
+**Availability Management:**
 
-| Interview Type | Panel Composition |
-|----------------|-------------------|
-| **Technical** | 1 Technical Expert + 1 HR (optional) |
-| **HR Round** | 1 HR Manager + 1 Department Lead (optional) |
-| **Managerial** | 1 Hiring Manager + 1 Senior Manager |
-| **Panel Interview** | 2-3 members (Technical + HR + Manager) |
+1. **Regular Availability:**
+   - Define available days (Mon-Fri by default)
+   - Available time slots (9 AM - 6 PM by default)
+   - Max interviews per day (default: 4)
 
-**3. Availability Management:**
+2. **Unavailability Management:**
+   - Mark as unavailable for date ranges
+   - Reasons: Leave, OOO, Training, etc.
+   - System prevents scheduling during unavailable dates
 
-**Availability Checking:**
-```sql
-SELECT interviewer_id, COUNT(*) as interview_count
-FROM interview_panel
-JOIN interviews ON interview_panel.interview_id = interviews.interview_id
-WHERE interviews.interview_date = :target_date
-  AND interviewer_id IN (:interviewer_ids)
-GROUP BY interviewer_id
-HAVING COUNT(*) < 4;  -- Max 4 per day
-```
+3. **Availability View:**
+   - Calendar showing available/unavailable slots
+   - Interview count for each day
+   - Real-time availability check during scheduling
 
-**Conflict Detection:**
-```sql
-SELECT interviewer_id
-FROM interview_panel
-JOIN interviews ON interview_panel.interview_id = interviews.interview_id
-WHERE interviews.interview_date = :target_date
-  AND interviews.interview_time BETWEEN :start_time AND :end_time
-  AND interviewer_id = :interviewer_id;
-```
+**Panel Composition Features:**
 
-**4. Panel Assignment UI:**
+1. **Panel Assignment:**
+   - Primary interviewer (required)
+   - Secondary interviewer (optional)
+   - Tertiary interviewer (optional)
+   - Role assignment for each interviewer (Technical, HR, Manager)
 
-**Dropdown Filters:**
-- Available on [Date]
-- Expertise: [Technical/HR/Managerial]
-- Department: [Department]
-- Interview Load: [Low/Medium/High]
+2. **Load Balancing:**
+   - System suggests interviewers based on:
+     - Expertise match with role requirements
+     - Current workload (prefer less loaded)
+     - Department alignment
+     - Availability
 
-**Availability Indicators:**
-- 🟢 Available
-- 🟡 Partially Available (< 4 interviews)
-- 🔴 Fully Booked (≥ 4 interviews)
-- ⚫ Unavailable (OOO, leave)
+3. **Conflict Detection:**
+   - Prevent same interviewer double-booking
+   - Show warning if conflict detected
+   - Suggest alternative dates/times
+   - Suggest alternative interviewers
 
-**5. Load Balancing:**
+**Interviewer Performance Metrics:**
 
-**Automatic Suggestions:**
-- System suggests interviewers based on:
-  1. Expertise match with role requirements
-  2. Current workload (prefer low workload)
-  3. Department alignment
-  4. Historical evaluation quality (optional metric)
+| Metric | Description | Tracking |
+|--------|-------------|----------|
+| Total Interviews | Number of interviews conducted | Count |
+| Evaluation Timeliness | % evaluations submitted on time | Percentage |
+| Evaluation Quality | Completeness and consistency of evaluations | Score |
+| Consistency Score | Deviation from panel average scores | Score |
+| Feedback Quality | Quality of written feedback | Qualitative |
 
-**Load Distribution Report:**
-```
-Interviewer Name    | This Week | This Month | Avg Rating
---------------------|-----------|------------|------------
-John Doe            | 8         | 32         | 4.5/5
-Jane Smith          | 5         | 20         | 4.7/5
-```
+**HR Manager Dashboard for Panel:**
+- Interviewer workload by week/month
+- Interview load distribution
+- Evaluation submission status
+- Performance metrics per interviewer
+- Recommendations for load balancing
 
-**6. Feedback Review:**
-
-**HR Manager View:**
-- See all evaluations submitted by each interviewer
-- View average scores given by interviewer
-- Consistency check: Flag if scores deviate > 1.5 from panel average
-- Quality metrics: Evaluation completeness, timeliness
-
-**Database Tables:**
-- `interviewers` (interviewer_id, user_id, department, expertise, interview_types, max_interviews_per_day, available_days, is_active)
-- `interviewer_unavailability` (unavailability_id, interviewer_id, from_date, to_date, reason)
-- `interview_panel` (panel_id, interview_id, interviewer_user_id, role, assigned_at)
-- `interviewer_statistics` (interviewer_id, total_interviews, avg_score_given, evaluations_submitted_on_time, consistency_score)
-
-**API Endpoints:**
-- `GET /api/interviewers` - List all interviewers
-- `GET /api/interviewers/available?date={date}&time={time}` - Get available interviewers
-- `POST /api/interviewers/{id}/unavailability` - Mark interviewer unavailable
-- `GET /api/interviewers/{id}/load?date_range={range}` - Get interview load
-- `GET /api/interviewers/{id}/statistics` - Get interviewer statistics
-
-**Error Handling:**
-- No available interviewers: "All interviewers are fully booked on this date. Please select another date"
-- Expertise mismatch: Warning "Selected interviewer may not have expertise in [Skill]"
+**Acceptance Criteria:**
+- Interviewer availability checked in real-time
+- Panel conflicts prevented
+- Load balancing suggestions provided
+- Interviewer metrics tracked and reported
+- Unavailability periods respected
 
 ---
 
-### 2.4 QR CHECK-IN SYSTEM
+### 2.4 QR CHECK-IN SYSTEM (FR-4)
 
 #### FR-4.1: QR Code Generation
 - **Requirement ID:** FR-4.1
 - **Priority:** HIGH
-- **Description:** Generate unique QR codes for interview check-in at venue
+- **Description:** Generate unique encrypted QR codes for each interview
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**QR Code Data Structure:**
+**QR Code Requirements:**
 
-```json
-{
-  "interview_id": "uuid-v4",
-  "candidate_id": "uuid-v4",
-  "application_id": "uuid-v4",
-  "interview_date": "2026-01-15",
-  "interview_time": "10:00:00",
-  "venue_location": "Head Office",
-  "generated_at": "2026-01-14T12:00:00Z",
-  "expires_at": "2026-01-15T10:30:00Z",
-  "signature": "sha256_hash"
-}
-```
+1. **Uniqueness:**
+   - One QR code per interview session
+   - Each QR contains encrypted interview data
+   - QR becomes single-use after first scan
 
-**Encryption:**
-- Data encrypted using AES-256
-- Encryption key stored in AWS KMS or environment variable (rotated quarterly)
-- Encrypted payload embedded in QR code
+2. **Data Contained in QR:**
+   - Interview ID (unique identifier)
+   - Candidate ID (for identification)
+   - Application ID (for record linking)
+   - Interview date
+   - Interview time
+   - Venue location
+   - Generation timestamp
+   - Expiration timestamp
+   - Cryptographic signature
+
+3. **Encryption:**
+   - Encryption method: AES-256
+   - Signed with HMAC for tampering detection
+   - Encrypted data embedded in QR code
+
+4. **Validity Rules:**
+   - Activation window: 30 minutes before interview time
+   - Valid duration: 1 hour (30 min before to 30 min after)
+   - Single-use: Invalid after first successful scan
+   - Status tracking: Active → Used / Expired / Invalidated
 
 **QR Code Properties:**
-- Format: QR Code (2D barcode)
-- Error correction: Level H (30% recovery)
-- Size: 250x250 pixels (PNG)
-- Data capacity: ~500 bytes
-- Encoding: UTF-8
 
-**Generation Process:**
+| Property | Specification |
+|----------|-------------|
+| Format | QR Code (2D barcode) |
+| Error Correction | Level H (30% recovery capacity) |
+| Size | 250x250 pixels |
+| File Format | PNG image |
+| Encoding | UTF-8 |
+| Data Capacity | ~500 bytes |
 
-1. **Trigger:** Interview scheduling (FR-3.2)
-2. **Create QR Record:**
-   ```sql
-   INSERT INTO qr_codes (qr_id, interview_id, qr_hash, generated_at, expiry_at, status)
-   VALUES (uuid_generate_v4(), :interview_id, :qr_hash, NOW(), :expiry_at, 'Active');
-   ```
-3. **Generate QR Data:**
-   - Serialize JSON payload
-   - Encrypt using AES-256
-   - Generate HMAC signature for integrity
-   - Base64 encode encrypted payload
-4. **Create QR Code Image:**
-   - Use `qrcode` Python library
-   - Generate 250x250 PNG image
-   - Save to Supabase Storage: `qr-codes/{interview_id}.png`
-5. **Return QR URL:** Signed URL with 7-day expiry
+**QR Generation Process:**
 
-**Validity Rules:**
-- **Activation Window:** 30 minutes before interview time
-- **Expiration:** 30 minutes after interview time
-- **Single-Use:** QR becomes invalid after successful scan
-- **Status:** Active → Used / Expired / Invalidated
+1. Interview scheduled (trigger point)
+2. System creates QR code record
+3. Generate encrypted payload with interview data
+4. Create digital signature for integrity
+5. Generate QR code image (250x250 PNG)
+6. Save QR image to Supabase Storage
+7. Store QR metadata in database
+8. Generate signed URL with 7-day expiry
+9. Provide QR for download/display/sharing
 
-**Example:**
-```
-Interview Time: 10:00 AM
-QR Valid From: 9:30 AM
-QR Valid Until: 10:30 AM
-```
+**QR Code Display Options:**
 
-**Display:**
-- **HR Dashboard:** QR code image with download button
-- **Email to Candidate:** QR code embedded in HTML
-- **WhatsApp:** QR code sent as image attachment
-- **Printable:** A4 PDF with QR code + instructions
+1. **HR Dashboard:**
+   - View QR code image in interview details
+   - Download QR code as PNG
+   - Print QR code on A4 paper
 
-**Database Tables:**
-- `qr_codes` (qr_id, interview_id, qr_hash, generated_at, expiry_at, used_at, scanned_by_ip, status)
+2. **Email to Candidate:**
+   - QR image embedded in HTML email
+   - Clickable QR code (optional)
 
-**API Endpoints:**
-- `POST /api/qr/generate` - Generate QR code for interview
-- `GET /api/qr/{qr_id}/image` - Get QR code image (signed URL)
-- `GET /api/qr/{qr_id}/status` - Check QR code status
-- `PUT /api/qr/{qr_id}/invalidate` - Manually invalidate QR code
+3. **WhatsApp Message:**
+   - QR code image sent as attachment
+   - Text instructions with QR
 
-**Python Implementation Example:**
-```python
-import qrcode
-import json
-from cryptography.fernet import Fernet
-import hashlib
-import base64
+4. **SMS (Optional):**
+   - Link to QR image
 
-def generate_interview_qr(interview_id, candidate_id, interview_date, interview_time):
-    # Prepare payload
-    payload = {
-        "interview_id": interview_id,
-        "candidate_id": candidate_id,
-        "interview_date": interview_date,
-        "interview_time": interview_time,
-        "generated_at": datetime.utcnow().isoformat(),
-        "expires_at": (datetime.fromisoformat(f"{interview_date}T{interview_time}") + timedelta(minutes=30)).isoformat()
-    }
-    
-    # Encrypt payload
-    cipher = Fernet(settings.QR_ENCRYPTION_KEY)
-    encrypted_payload = cipher.encrypt(json.dumps(payload).encode())
-    
-    # Generate signature
-    signature = hashlib.sha256(encrypted_payload).hexdigest()
-    payload["signature"] = signature
-    
-    # Encode for QR
-    qr_data = base64.b64encode(encrypted_payload).decode()
-    
-    # Generate QR code
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_H,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Save to Supabase Storage
-    img_path = f"qr-codes/{interview_id}.png"
-    img.save(img_path)
-    
-    # Upload to Supabase
-    storage_url = upload_to_supabase(img_path, f"qr-codes/{interview_id}.png")
-    
-    # Store in database
-    qr_hash = hashlib.sha256(qr_data.encode()).hexdigest()
-    db.execute(
-        "INSERT INTO qr_codes (qr_id, interview_id, qr_hash, generated_at, expiry_at, status) VALUES (%s, %s, %s, %s, %s, 'Active')",
-        (uuid4(), interview_id, qr_hash, datetime.utcnow(), payload["expires_at"])
-    )
-    
-    return storage_url
-```
+**QR Code Invalidation:**
+- HR Manager can manually invalidate QR if interview cancelled
+- QR auto-invalidates after expiration time
+- Invalidated QR code cannot be scanned
 
-**Error Handling:**
-- QR generation failure: Retry 3 times, alert admin
-- Storage upload failure: Use temporary local storage, queue for upload
-- Encryption error: Log error, alert security team
+**Acceptance Criteria:**
+- QR code generated on interview scheduling
+- QR contains encrypted interview data
+- QR code image generated and stored
+- Single-use enforcement working
+- Expiry validation working
+- Signed URL provided with correct expiry
 
 ---
 
 #### FR-4.2: QR Check-in at Venue
 - **Requirement ID:** FR-4.2
 - **Priority:** HIGH
-- **Description:** Candidate scans QR code at interview venue via mobile
+- **Description:** Candidate scans QR code at interview venue for check-in
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**Check-in Flow:**
+**Check-in Interface:**
 
-**1. Candidate Arrives at Venue:**
-- Approaches reception desk
-- Informed to scan QR code for check-in
+1. **Access Point:**
+   - Mobile web browser: `https://portal.sfspl.com/checkin`
+   - Works on all mobile phones and tablets
+   - Works on tablet at reception desk
 
-**2. QR Scanning Interface:**
-- **Option A:** Mobile web browser with camera access
-- **Option B:** Dedicated tablet at reception with QR scanner
-- **URL:** `https://portal.sfspl.com/checkin`
+2. **Camera Interface:**
+   - Automatic camera access request
+   - Visual guide for QR positioning
+   - Auto-detection and reading
+   - Processing indicator during scan
 
-**3. Scan QR Code:**
-- Camera opens automatically
-- Candidate holds QR code in front of camera
-- System detects and reads QR code
+**QR Validation Process:**
 
-**4. QR Validation Process:**
+System must perform the following validations:
 
-```python
-async def validate_qr_checkin(qr_data: str, ip_address: str, device_info: str):
-    # Step 1: Decode and decrypt
-    try:
-        encrypted_payload = base64.b64decode(qr_data)
-        cipher = Fernet(settings.QR_ENCRYPTION_KEY)
-        decrypted_payload = cipher.decrypt(encrypted_payload)
-        payload = json.loads(decrypted_payload)
-    except Exception as e:
-        return {"valid": False, "error": "Invalid QR code"}
-    
-    # Step 2: Verify signature
-    expected_signature = hashlib.sha256(encrypted_payload).hexdigest()
-    if payload.get("signature") != expected_signature:
-        return {"valid": False, "error": "QR code tampered"}
-    
-    # Step 3: Check expiry
-    expires_at = datetime.fromisoformat(payload["expires_at"])
-    if datetime.utcnow() > expires_at:
-        return {"valid": False, "error": "QR code expired"}
-    
-    # Step 4: Check activation window (30 min before interview)
-    interview_datetime = datetime.fromisoformat(f"{payload['interview_date']}T{payload['interview_time']}")
-    activation_time = interview_datetime - timedelta(minutes=30)
-    if datetime.utcnow() < activation_time:
-        return {"valid": False, "error": f"QR code not yet active. Please check in after {activation_time.strftime('%I:%M %p')}"}
-    
-    # Step 5: Check if already used
-    qr_hash = hashlib.sha256(qr_data.encode()).hexdigest()
-    qr_record = db.query("SELECT * FROM qr_codes WHERE qr_hash = %s", (qr_hash,))
-    
-    if not qr_record:
-        return {"valid": False, "error": "QR code not found"}
-    
-    if qr_record["status"] == "Used":
-        return {"valid": False, "error": "QR code already used"}
-    
-    if qr_record["status"] == "Invalidated":
-        return {"valid": False, "error": "QR code has been cancelled"}
-    
-    # Step 6: Mark as used
-    db.execute(
-        "UPDATE qr_codes SET status = 'Used', used_at = %s, scanned_by_ip = %s WHERE qr_hash = %s",
-        (datetime.utcnow(), ip_address, qr_hash)
-    )
-    
-    # Step 7: Log check-in
-    db.execute(
-        "INSERT INTO qr_validation_logs (qr_id, scan_time, ip_address, device_type, status) VALUES (%s, %s, %s, %s, 'Success')",
-        (qr_record["qr_id"], datetime.utcnow(), ip_address, device_info)
-    )
-    
-    # Step 8: Update application status
-    db.execute(
-        "UPDATE candidate_applications SET status = 'Interview In Progress - Checked In' WHERE application_id = %s",
-        (payload["application_id"],)
-    )
-    
-    # Step 9: Determine candidate type and return forms
-    application = db.query("SELECT * FROM candidate_applications WHERE application_id = %s", (payload["application_id"],))
-    
-    if application["status"] == "Interview Scheduled":
-        candidate_type = "Screened"
-        forms_required = ["Form-2"]
-    else:
-        candidate_type = "Walk-in"
-        forms_required = ["Form-1", "Form-2"]
-    
-    return {
-        "valid": True,
-        "candidate_type": candidate_type,
-        "forms_required": forms_required,
-        "candidate_name": application["candidate_name"],
-        "interview_id": payload["interview_id"],
-        "message": f"Welcome, {application['candidate_name']}! Please proceed to {payload.get('venue_room', 'waiting area')}"
-    }
-```
+1. **Decrypt QR Data:**
+   - Decrypt encrypted payload from QR
+   - Error if decryption fails: "Invalid QR code"
 
-**5. Success Response:**
+2. **Signature Verification:**
+   - Verify HMAC signature
+   - Error if signature invalid: "QR code tampered or invalid"
 
-**UI Display:**
-```
-✅ Check-in Successful!
+3. **Expiry Check:**
+   - Verify current time is within validity window
+   - Validity window: 30 min before interview to 30 min after
+   - Error if expired: "QR code has expired"
 
-Welcome, [Candidate Name]!
+4. **Single-Use Check:**
+   - Query database for QR usage history
+   - Error if already used: "QR code already scanned"
 
-Please complete the following forms:
-→ Form-2: Address & Qualifications
+5. **Status Check:**
+   - Verify QR status is "Active"
+   - Error if invalidated: "QR code has been cancelled"
 
-[Start Form-2 Button]
+6. **Geolocation Verification (Optional):**
+   - Capture GPS coordinates
+   - Verify within 500m radius of venue
+   - Warning if outside venue radius
 
-Interview Details:
-Time: [HH:MM AM/PM]
-Location: [Room Number]
+**Successful Check-in Actions:**
 
-Please wait in the reception area. You will be called shortly.
-```
+1. **Mark QR as Used:**
+   - Update QR status to "Used"
+   - Record scan timestamp
+   - Record IP address and device type
 
-**6. Forms Presentation:**
+2. **Update Application Status:**
+   - Change status to "Interview In Progress - Checked In"
+   - Log check-in event in status history
 
-**Screened Candidate:**
-- Form-2 link displayed immediately
-- Pre-filled with candidate_id and application_id
-- Candidate completes Form-2 while waiting
+3. **Determine Candidate Type:**
+   - Query application details
+   - If pre-screened: Type = "Screened"
+   - If walk-in or no Form-2: Type = "Walk-in"
 
-**Walk-in Candidate:**
-- Form-1 link displayed first
-- After Form-1 submission, Form-2 link displayed
-- Both forms completed before interview
+4. **Display Success Message:**
+   - "✅ Check-in Successful!"
+   - Welcome message with candidate name
+   - Show which forms need to be completed
+   - Provide next action instructions
 
-**7. Check-in Confirmation:**
-- WhatsApp notification to HR: "Candidate [Name] has checked in for interview"
-- Email notification to interviewers: "Candidate has arrived and is completing forms"
+5. **Load Required Forms:**
+   - **For Screened:** Show Form-2 only (address, qualifications)
+   - **For Walk-in:** Show Form-1 + Form-2
 
-**UI Components:**
-- Mobile-responsive camera interface
-- QR code detection with visual guide (frame overlay)
-- Loading spinner during validation
-- Success/Error message display
-- Auto-redirect to forms
-
-**Database Tables:**
-- `qr_codes` (qr_id, interview_id, qr_hash, status, used_at, scanned_by_ip)
-- `qr_validation_logs` (log_id, qr_id, scan_time, ip_address, device_type, status, error_message)
-
-**API Endpoints:**
-- `GET /api/checkin` - Load QR scanner page
-- `POST /api/checkin/validate` - Validate QR code and check in
-- `GET /api/checkin/status?interview_id={id}` - Check if candidate has checked in
+6. **Send Notifications:**
+   - WhatsApp to HR: "Candidate [Name] has checked in"
+   - Email to interviewers: "Candidate has arrived"
 
 **Error Handling:**
 
 | Error | Message to Candidate | Action |
 |-------|---------------------|--------|
-| **Invalid QR** | "Invalid QR code. Please ensure you're scanning the correct code" | Show help link |
-| **Expired QR** | "QR code has expired. Please contact reception" | Alert HR |
-| **Already Used** | "You have already checked in. Please proceed to [Room]" | Show interview details |
-| **Too Early** | "Check-in opens at [Time]. Please wait" | Show countdown timer |
-| **Cancelled Interview** | "This interview has been cancelled. Please contact HR" | Show HR contact |
-| **Camera Access Denied** | "Camera access required for QR scanning. Please enable in settings" | Show instructions |
-| **Network Error** | "Connection lost. Retrying..." | Auto-retry 3 times |
+| Invalid QR | "Invalid QR code. Please ensure you're scanning the correct code" | Show help option |
+| Expired QR | "QR code has expired. Please contact reception" | Alert HR receptionist |
+| Already Used | "You have already checked in. Please proceed to [Room]" | Show interview details |
+| Too Early | "Check-in opens at [Time]. Please wait" | Show countdown timer |
+| Cancelled Interview | "This interview has been cancelled. Please contact HR" | Show HR contact details |
+| Camera Access Denied | "Camera access required. Please enable in settings" | Show device instructions |
+| Network Error | "Connection lost. Retrying..." | Retry automatically 3 times |
+| Outside Venue | "You seem to be outside venue. Please ensure you're at [Address]" | Warning (not blocking) |
 
-**Geolocation Verification (Optional):**
-- Capture GPS coordinates on QR scan
-- Verify candidate is within 500m radius of venue
-- If outside: Warning "You seem to be outside the venue. Please ensure you're at [Venue Name]"
+**Mobile Responsiveness:**
+- QR scanner works on iPhone and Android
+- Works on all screen sizes
+- Touch-friendly buttons
+- Landscape and portrait orientation
+
+**Acceptance Criteria:**
+- QR scan validation successful
+- Check-in timestamp recorded
+- Correct forms displayed based on candidate type
+- Notifications sent to HR
+- Check-in status updated in database
+- Error messages clear and actionable
 
 ---
 
 #### FR-4.3: QR Access Logs & Audit
 - **Requirement ID:** FR-4.3
 - **Priority:** LOW
-- **Description:** Maintain complete logs of QR validation attempts for audit and security
+- **Description:** Maintain audit logs of all QR validation attempts
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**Log Entry Structure:**
+**Log Entry Contents:**
 
-```json
-{
-  "log_id": "uuid",
-  "qr_id": "uuid",
-  "interview_id": "uuid",
-  "candidate_id": "uuid",
-  "scan_time": "2026-01-15T09:45:00Z",
-  "ip_address": "192.168.1.100",
-  "device_type": "Mobile - Chrome - Android 12",
-  "geolocation": {
-    "latitude": 22.5726,
-    "longitude": 88.3639,
-    "accuracy": 10
-  },
-  "status": "Success | Invalid | Expired | AlreadyUsed",
-  "error_message": "QR code expired",
-  "validation_duration_ms": 150
-}
-```
+For each QR scan attempt (success or failure):
+
+| Field | Recorded Data |
+|-------|---------------|
+| Timestamp | Exact date and time of scan |
+| QR ID | Identifier of QR code scanned |
+| Interview ID | Associated interview |
+| Candidate ID | Candidate attempting check-in |
+| Scan Status | Success, Invalid, Expired, Already Used, Outside Venue, etc. |
+| IP Address | Source IP of scan request |
+| Device Type | Browser, OS, device model |
+| Geolocation | GPS coordinates (if captured) |
+| Error Message | Reason for failure (if applicable) |
+| Validation Duration | Milliseconds to complete validation |
 
 **Logging Events:**
-- Every QR scan attempt (success or failure)
-- Multiple failed attempts from same IP (fraud detection)
+
+System must log:
+- Every successful QR scan
+- Every failed validation attempt
+- Multiple failed attempts from same IP
+- Unusual patterns (QR scanned from different city)
 - QR code generation
-- QR code invalidation (by HR)
-- Unusual patterns (e.g., QR scanned from different city)
+- QR code invalidation by HR
+- Manual checks of QR status
 
-**Analytics & Reports:**
+**Analytics & Fraud Detection:**
 
-**1. QR Usage Statistics:**
-- Total QR codes generated: Count
-- Total successful check-ins: Count
-- Failed validation attempts: Count by error type
-- Average check-in time: Minutes before interview
-- Check-in rate: % of scheduled candidates who checked in
+1. **QR Usage Statistics:**
+   - Total QR codes generated (by date range)
+   - Total successful check-ins
+   - Failed validation attempts (by error type)
+   - Average check-in time before interview
+   - Check-in rate (% of scheduled candidates)
 
-**2. Fraud Detection:**
-- Multiple failed attempts from same IP: Alert if > 5 in 10 min
-- QR scan from unexpected location: Flag if > 50km from venue
-- Duplicate QR data: Alert if same QR scanned from different IPs
+2. **Fraud Detection Alerts:**
+   - Flag if > 5 failed attempts from same IP in 10 min
+   - Flag if QR scanned from > 50km away from venue
+   - Flag if same QR scanned from multiple IPs
+   - Alert admin for suspicious patterns
 
-**3. Venue-wise Check-in Report:**
-```
-Venue           | Scheduled | Checked In | No-Show | Check-in Rate
-----------------|-----------|------------|---------|---------------
-Head Office     | 25        | 23         | 2       | 92%
-Branch 1        | 15        | 14         | 1       | 93%
-```
+3. **Venue-wise Analytics:**
+   - Check-in rate per venue
+   - No-show rate (scheduled but not checked in)
+   - Average check-in time per venue
 
-**Database Tables:**
-- `qr_validation_logs` (log_id, qr_id, interview_id, candidate_id, scan_time, ip_address, device_type, geolocation, status, error_message, validation_duration_ms)
+4. **Reporting:**
+   - Generate fraud alerts report
+   - QR usage analytics report
+   - Venue-wise check-in statistics
 
-**API Endpoints:**
-- `GET /api/qr/logs?interview_id={id}` - Get logs for specific interview
-- `GET /api/qr/analytics?date_range={range}` - Get QR usage analytics
-- `GET /api/qr/fraud-alerts` - Get potential fraud attempts
-
-**Retention Policy:**
+**Data Retention:**
 - QR validation logs retained for 2 years
 - After 2 years, archive to cold storage
-- Personal identifiers anonymized after retention period
+- Personal identifiers anonymized after retention
+- Deletion policy defined in compliance doc
+
+**Acceptance Criteria:**
+- All QR scan events logged
+- Logs immutable (no deletion)
+- Analytics queries available for HR
+- Fraud alerts triggered for suspicious patterns
+- Data retained per policy
 
 ---
 
-### 2.5 INTERVIEW EVALUATION
+### 2.5 INTERVIEW EVALUATION (FR-5)
 
 #### FR-5.1: Form-3 - Interview Evaluation Form
 - **Requirement ID:** FR-5.1
 - **Priority:** HIGH
-- **Description:** Interviewer fills structured evaluation form post-interview
+- **Description:** Capture structured interview evaluation from interviewers
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**Form Access:**
-- Available only to assigned interviewers for assigned interviews
-- Accessible after candidate QR check-in
-- Can be filled immediately after interview or later (up to 7 days)
+**Form-3 Availability:**
+- Available only to assigned interviewers
+- Can be filled immediately after interview or within 7 days
+- One form per interviewer per interview
+- Form cannot be edited after submission
 
-**Form Sections:**
+**Scoring Dimensions:**
 
-**Section 1: Candidate Assessment**
+System must capture scores on 5 dimensions (1-5 scale):
 
-| Dimension | Description | Score Range | Scoring Rubric |
-|-----------|-------------|-------------|----------------|
-| **Technical Skills** | Domain knowledge, problem-solving, coding ability | 1-5 | 1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent |
-| **Communication** | Clarity, articulation, listening, confidence | 1-5 | 1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent |
-| **Problem-Solving** | Analytical thinking, approach, creativity | 1-5 | 1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent |
-| **Cultural Fit** | Alignment with company values, team fit | 1-5 | 1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent |
-| **Overall Assessment** | Holistic evaluation | 1-5 | 1=Poor, 2=Below Average, 3=Average, 4=Good, 5=Excellent |
+| Dimension | Description | Guidance |
+|-----------|-------------|----------|
+| **Technical Skills** | Domain knowledge, expertise, technical proficiency | 1=No skills, 2=Below avg, 3=Average, 4=Good, 5=Excellent |
+| **Communication** | Clarity, listening, articulation, confidence | 1=Poor, 2=Below avg, 3=Average, 4=Good, 5=Excellent |
+| **Problem-Solving** | Analytical thinking, approach, creativity | 1=Weak, 2=Below avg, 3=Average, 4=Good, 5=Excellent |
+| **Cultural Fit** | Alignment with company values, team compatibility | 1=Poor fit, 2=Below avg, 3=Average fit, 4=Good fit, 5=Excellent fit |
+| **Overall Assessment** | Holistic evaluation considering all factors | 1=Poor, 2=Below avg, 3=Average, 4=Good, 5=Excellent |
 
-**Scoring Rubric Guidance (Shown as Tooltip):**
+**Qualitative Feedback:**
 
-**Technical Skills:**
-- **1 (Poor):** Lacks basic knowledge, unable to answer fundamental questions
-- **2 (Below Average):** Some knowledge, but significant gaps
-- **3 (Average):** Meets basic requirements, average competency
-- **4 (Good):** Strong knowledge, can handle complex scenarios
-- **5 (Excellent):** Exceptional expertise, exceeds expectations
+| Field | Type | Max Length | Required | Purpose |
+|-------|------|-----------|----------|---------|
+| Strengths | Textarea | 200 chars | Yes | Key strengths observed |
+| Areas for Development | Textarea | 200 chars | Yes | Growth areas identified |
+| Specific Examples | Textarea | 300 chars | No | Supporting examples from interview |
 
-**Section 2: Qualitative Feedback**
+**Recommendation:**
 
-| Field | Type | Required | Max Length |
-|-------|------|----------|-----------|
-| `strengths` | Textarea | Yes | 200 chars |
-| `areas_for_development` | Textarea | Yes | 200 chars |
-| `specific_examples` | Textarea | No | 300 chars |
+| Option | Meaning |
+|--------|---------|
+| Strong Recommend | Definitely hire, exceptional candidate |
+| Recommend | Good fit, would be good hire |
+| Borderline | Could work with proper guidance |
+| Do Not Recommend | Not suitable for role |
 
-**Section 3: Recommendation**
+**Panel Feedback** (Internal, visible to HR only):
 
-| Field | Type | Options |
-|-------|------|---------|
-| `recommendation` | Radio | ○ Strong Recommend, ○ Recommend, ○ Borderline, ○ Do Not Recommend |
+| Field | Type | Max Length | Purpose |
+|-------|------|-----------|---------|
+| Panel Feedback | Textarea | 500 chars | Internal notes for HR discussion |
+| Red Flags | Textarea | 300 chars | Concerns or warning signs |
 
-**Section 4: Internal Panel Feedback** (Visible only to HR)
+**Auto-Captured Information:**
 
-| Field | Type | Required | Max Length |
-|-------|------|----------|-----------|
-| `panel_feedback` | Textarea | No | 500 chars |
-| `red_flags` | Textarea | No | 300 chars |
+| Field | Source |
+|-------|--------|
+| Interview Duration | Calculated from QR check-in to form submission |
+| Evaluation Submitted At | Form submission timestamp |
+| Interviewer ID | From session/login |
+| Interview ID | From form parameters |
 
-**Section 5: Metadata**
+**Form Features:**
 
-| Field | Auto-captured |
-|-------|---------------|
-| `interview_duration_actual` | Yes (derived from check-in to form submission time) |
-| `evaluation_submitted_at` | Yes (timestamp) |
-| `interviewer_id` | Yes (from session) |
+1. **User Interface:**
+   - Rating inputs for scores (1-5 stars or sliders)
+   - Clear rubric guidance on hover
+   - Character count for text fields
+   - Auto-save draft every 60 seconds
+   - Submit confirmation modal
+   - Progress indicator
 
-**UI Components:**
-- Star rating inputs for scores (1-5 stars)
-- Sliders for numeric scores (alternate UI)
-- Character count for textareas
-- Auto-save draft every 60 seconds
-- Submit confirmation modal
+2. **Validation:**
+   - All scoring fields required
+   - All text fields required (min 10 chars)
+   - At least one of 5 ratings must be provided
+   - Overall score should be within 1.5 points of average
 
-**Process Flow:**
-
-1. **Access Form:**
+3. **Form Workflow:**
    - Interviewer logs in
-   - Navigates to "My Interviews" dashboard
-   - Clicks "Submit Evaluation" for completed interview
+   - Opens completed interview from "My Interviews" list
+   - Clicks "Submit Evaluation"
    - Form-3 loads with interview details pre-filled
-
-2. **Fill Evaluation:**
-   - Rates each dimension (1-5)
-   - Writes qualitative feedback
-   - Selects recommendation
-   - Adds panel feedback (if needed)
-
-3. **Submit:**
-   - Validation: All required fields filled
-   - Confirmation modal: "Are you sure you want to submit? This cannot be edited later"
-   - On confirm:
-     - Insert record into `interview_evaluations` table
-     - Update interview status to "Evaluation Submitted"
-     - Send notification to HR Manager
-     - Send thank you message to interviewer
-
-**Evaluation Submission Notification:**
-
-**To HR Manager (Email):**
-```
-Subject: Evaluation Received - [Candidate Name] for [Role]
-
-Dear [HR Manager],
-
-An evaluation has been submitted for [Candidate Name]'s interview for the [Role] position.
-
-Interviewer: [Interviewer Name]
-Overall Score: [X/5]
-Recommendation: [Strong Recommend / Recommend / Borderline / Do Not Recommend]
-
-[View Full Evaluation Button]
-
-You can now review all evaluations and make a hiring decision.
-
-Thank you,
-System Notification
-```
-
-**Database Tables:**
-- `interview_evaluations` (evaluation_id, interview_id, interviewer_user_id, technical_score, communication_score, problem_solving_score, cultural_fit_score, overall_score, strengths, areas_for_development, specific_examples, recommendation, panel_feedback, red_flags, interview_duration_actual, submitted_at)
-
-**API Endpoints:**
-- `GET /api/evaluations/form?interview_id={id}` - Load Form-3 for interview
-- `POST /api/evaluations/draft` - Save draft
-- `GET /api/evaluations/draft?interview_id={id}` - Retrieve draft
-- `POST /api/evaluations/submit` - Submit evaluation
-- `GET /api/evaluations?interview_id={id}` - Get all evaluations for interview (HR only)
-
-**Validation Rules:**
-```python
-class InterviewEvaluationSchema(BaseModel):
-    interview_id: UUID4
-    interviewer_user_id: UUID4
-    technical_score: int = Field(ge=1, le=5)
-    communication_score: int = Field(ge=1, le=5)
-    problem_solving_score: int = Field(ge=1, le=5)
-    cultural_fit_score: int = Field(ge=1, le=5)
-    overall_score: int = Field(ge=1, le=5)
-    strengths: str = Field(max_length=200)
-    areas_for_development: str = Field(max_length=200)
-    specific_examples: Optional[str] = Field(max_length=300)
-    recommendation: Literal["Strong Recommend", "Recommend", "Borderline", "Do Not Recommend"]
-    panel_feedback: Optional[str] = Field(max_length=500)
-    red_flags: Optional[str] = Field(max_length=300)
-    
-    @validator('overall_score')
-    def overall_should_align_with_average(cls, v, values):
-        avg = (values.get('technical_score', 0) + values.get('communication_score', 0) + 
-               values.get('problem_solving_score', 0) + values.get('cultural_fit_score', 0)) / 4
-        if abs(v - avg) > 1.5:
-            # Warning, not error
-            logger.warning(f"Overall score {v} deviates significantly from average {avg}")
-        return v
-```
+   - Fills scores and feedback
+   - Submits form
+   - Confirmation: "Evaluation submitted successfully"
+   - Email notification sent
 
 **Reminder System:**
-- If evaluation not submitted within 24 hours: Email reminder to interviewer
-- If evaluation not submitted within 48 hours: Escalation email to HR Manager
-- If evaluation not submitted within 7 days: Auto-marked as "Evaluation Pending - Overdue"
+- 24 hours after interview: Email reminder if not submitted
+- 48 hours after interview: Escalation email to HR Manager
+- 7 days after interview: Auto-marked as "Evaluation Overdue"
+
+**Acceptance Criteria:**
+- Form-3 loads for assigned interviews only
+- All scores captured (1-5 range)
+- Qualitative feedback recorded
+- Recommendation selected
+- Red flags tracked
+- Submission timestamp recorded
+- HR Manager notified
 
 ---
 
 #### FR-5.2: Scoring & Aggregation
 - **Requirement ID:** FR-5.2
 - **Priority:** MEDIUM
-- **Description:** Aggregate scores from multiple interviewers for fair evaluation
+- **Description:** Aggregate scores from multiple interviewers for fair decision-making
 
-**Detailed Specifications:**
+**Functional Specifications:**
 
-**Aggregation Logic:**
+**Aggregation Methods:**
 
-**1. Simple Average (Default):**
-```sql
-SELECT 
-    AVG(technical_score) as avg_technical,
-    AVG(communication_score) as avg_communication,
-    AVG(problem_solving_score) as avg_problem_solving,
-    AVG(cultural_fit_score) as avg_cultural_fit,
-    AVG(overall_score) as avg_overall
-FROM interview_evaluations
-WHERE interview_id = :interview_id;
-```
+1. **Simple Average (Default):**
+   - Calculate mean for each dimension
+   - Example: Technical scores [4, 4, 5] = Average 4.3
+   - Calculate overall average score
 
-**2. Weighted Average (Optional - Configurable):**
-```python
-weights = {
-    "technical_score": 0.4,
-    "communication_score": 0.2,
-    "problem_solving_score": 0.2,
-    "cultural_fit_score": 0.2
-}
+2. **Weighted Average (Optional):**
+   - Apply custom weights to dimensions
+   - Example: Technical 40%, Communication 20%, Problem-solving 20%, Cultural-fit 20%
+   - Weighted overall score calculated
 
-weighted_avg = sum(score * weights[dimension] for dimension, score in scores.items())
-```
+3. **Role-Based Weighting (Optional):**
+   - Interviewer role weights dimensions
+   - Technical interviewer's technical score weighted 2x
+   - HR interviewer's cultural-fit score weighted 2x
 
-**3. Interviewer Role-Based Weighting:**
-```python
-# Technical interviewer's technical score weighted 2x
-# HR interviewer's cultural fit score weighted 2x
+**Outlier Detection:**
 
-if interviewer_role == "Technical":
-    technical_weight = 2.0
-else:
-    technical_weight = 1.0
+System must flag significant score deviations:
 
-if interviewer_role == "HR":
-    cultural_fit_weight = 2.0
-else:
-    cultural_fit_weight = 1.0
-```
+1. **Detection Method:**
+   - Calculate mean for each dimension
+   - Flag any score deviating > 1.5 points from mean
+   - Example: If average is 4.0 and one score is 5.0, flag (deviation > 1)
 
-**4. Outlier Detection:**
-```python
-def detect_outliers(scores):
-    """Flag if any interviewer's score deviates > 1.5 from mean"""
-    mean = sum(scores) / len(scores)
-    outliers = []
-    
-    for idx, score in enumerate(scores):
-        if abs(score - mean) > 1.5:
-            outliers.append({
-                "interviewer": interviewers[idx],
-                "score": score,
-                "mean": mean,
-                "deviation": abs(score - mean)
-            })
-    
-    return outliers
-```
+2. **Outlier Display:**
+   - Highlight outlier scores in report
+   - Show which interviewer gave outlier score
+   - Explain the deviation ("This score is significantly higher than panel average")
+   - Recommend HR review for consensus
 
-**Aggregate Report Structure:**
+3. **Handling:**
+   - HR Manager reviews outliers
+   - Consider if legitimate or scoring error
+   - May request interviewer clarification
 
-```json
-{
-  "interview_id": "uuid",
-  "candidate_name": "John Doe",
-  "role": "Software Engineer",
-  "interview_date": "2026-01-15",
-  "total_evaluations": 3,
-  "aggregate_scores": {
-    "technical": {
-      "average": 4.3,
-      "min": 4.0,
-      "max": 5.0,
-      "individual": [4.0, 4.5, 5.0],
-      "outliers": []
-    },
-    "communication": {
-      "average": 4.7,
-      "min": 4.5,
-      "max": 5.0,
-      "individual": [4.5, 4.5, 5.0],
-      "outliers": []
-    },
-    "problem_solving": {
-      "average": 4.0,
-      "min": 3.0,
-      "max": 5.0,
-      "individual": [3.0, 4.0, 5.0],
-      "outliers": [{"interviewer": "Jane Smith", "score": 5.0, "deviation": 2.0}]
-    },
-    "cultural_fit": {
-      "average": 4.5,
-      "min": 4.0,
-      "max": 5.0,
-      "individual": [4.0, 4.5, 5.0],
-      "outliers": []
-    },
-    "overall": {
-      "average": 4.4,
-      "min": 4.0,
-      "max": 5.0,
-      "individual": [4.0, 4.5, 5.0],
-      "weighted_average": 4.3
-    }
-  },
-  "recommendation_summary": {
-    "strong_recommend": 2,
-    "recommend": 1,
-    "borderline": 0,
-    "do_not_recommend": 0,
-    "consensus": "Strong Recommend"
-  },
-  "qualitative_summary": {
-    "strengths": ["Strong technical skills", "Excellent problem solver", "Good cultural fit"],
-    "areas_for_development": ["Communication could be improved", "Needs more real-world experience"],
-    "red_flags": null
-  },
-  "benchmark_comparison": {
-    "role_benchmark": 4.0,
-    "candidate_score": 4.4,
-    "percentile": 75
-  }
-}
-```
+**Aggregate Report Contents:**
 
-**Visualization:**
+For each dimension and overall:
 
-**1. Radar Chart:**
-- 5 dimensions (Technical, Communication, Problem-Solving, Cultural Fit, Overall)
-- Overlays: Individual interviewer scores + Average
-- Benchmark line (role average)
+| Item | Contents |
+|------|----------|
+| Average Score | Mean of all scores |
+| Min Score | Lowest score |
+| Max Score | Highest score |
+| Individual Scores | All 3 scores listed |
+| Outliers | List of outlier scores if any |
+| Standard Deviation | Measure of score consistency |
 
-**2. Score Distribution:**
-- Bar chart showing score distribution per dimension
-- Highlight outliers in different color
+**Recommendation Summary:**
 
-**3. Recommendation Breakdown:**
-- Pie chart showing recommendation split
+| Item | Contents |
+|------|----------|
+| Strong Recommend Count | Number of interviewers voting strong |
+| Recommend Count | Number recommending |
+| Borderline Count | Number borderline |
+| Do Not Recommend Count | Number recommending rejection |
+| Consensus | Majority recommendation (if consensus exists) |
 
-**Comparison with Role Benchmark:**
-```sql
-SELECT 
-    AVG(overall_score) as role_avg_score
-FROM interview_evaluations ie
-JOIN interviews i ON ie.interview_id = i.interview_id
-JOIN candidate_applications ca ON i.application_id = ca.application_id
-WHERE ca.role_id = :role_id
-  AND ie.submitted_at > NOW() - INTERVAL '6 months';
-```
+**Benchmark Comparison:**
 
-**API Endpoints:**
-- `GET /api/evaluations/aggregate?interview_id={id}` - Get aggregated scores
-- `GET /api/evaluations/benchmark?role_id={id}` - Get role benchmark
-- `GET /api/evaluations/visualization?interview_id={id}` - Get chart data
+1. **Role Benchmark:**
+   - Query all interviews for same role (last 6 months)
+   - Calculate average score for role
+   - Compare candidate to benchmark
 
-**Error Handling:**
-- Incomplete evaluations: Show warning "Only X of Y evaluations submitted"
-- Single evaluation: Show note "Aggregation based on single evaluation. Consider additional input"
-- Large deviation: Flag "Significant disagreement among interviewers. Review recommended"
+2. **Percentile Ranking:**
+   - Where does candidate score rank among similar roles?
+   - Percentile display (e.g., 75th percentile)
 
----
+3. **Trend Analysis:**
+   - Score trend over time (if multiple rounds)
+   - Improvement/decline across dimensions
 
-(Document continues with remaining sections: FR-6 to FR-10, NFR, Architecture, Data Requirements, Security, Interface Requirements, User Roles, Acceptance Criteria, and Delivery Phases. Due to length constraints, these sections are documented in Part 1 or can be expanded further if needed.)
+**Visualization Requirements:**
 
----
+System must support these visualizations:
 
-## 3. NON-FUNCTIONAL REQUIREMENTS
+1. **Radar Chart:**
+   - 5 dimensions as axes
+   - Overlay: Individual scores + Average + Benchmark
+   - Visual comparison easy to understand
 
-### 3.1 PERFORMANCE REQUIREMENTS
+2. **Score Distribution:**
+   - Bar chart showing distribution per dimension
+   - Highlight outliers in different color
 
-#### NFR-1.1: Response Time
-- **Requirement ID:** NFR-1.1
-- **Priority:** HIGH
-
-**Specifications:**
-
-| Operation | Target | Measured At | SLA |
-|-----------|--------|-------------|-----|
-| **API Response** | < 500ms | 95th percentile | 95% of requests |
-| **Form Submission** | < 1 second | End-to-end | 99% of submissions |
-| **Dashboard Load** | < 2 seconds | Initial page load | 95% of page loads |
-| **Search Query** | < 500ms | Database query execution | 99% of queries |
-| **Report Generation** | < 30 seconds | Large datasets (10K+ records) | 90% of reports |
-| **Document Upload** | < 5 seconds | 5MB file | 95% of uploads |
-| **QR Validation** | < 200ms | QR scan to validation response | 99% of scans |
-
-**Measurement:**
-- Application Performance Monitoring (APM) tool: AWS CloudWatch, New Relic, or Datadog
-- P50, P95, P99 percentile tracking
-- Daily performance reports
-
-**Optimization Strategies:**
-- Database indexing on frequently queried fields
-- Redis caching for dashboard metrics
-- CDN for static assets
-- Database connection pooling
-- Async processing for long-running tasks
-- Query optimization (EXPLAIN ANALYZE)
-
----
-
-#### NFR-1.2: Throughput
-- **Requirement ID:** NFR-1.2
-- **Priority:** HIGH
-
-**Specifications:**
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Concurrent Users** | 100 users | No degradation in performance |
-| **Form Submissions** | 100 submissions/minute | Peak load handling |
-| **API Requests** | 1000 requests/minute | Sustained load |
-| **Database Connections** | 50 concurrent connections | Connection pool size |
-| **Document Uploads** | 50 uploads/minute | Parallel uploads |
-
-**Load Testing:**
-- Tool: Locust, JMeter, or k6
-- Test scenarios:
-  - 100 concurrent users browsing dashboards
-  - 50 concurrent form submissions
-  - 20 concurrent document uploads
-- Weekly load tests during development
-- Monthly load tests in production
-
----
-
-#### NFR-1.3: Scalability
-- **Requirement ID:** NFR-1.3
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Vertical Scaling (Single Server):**
-- Support up to 100K candidate records
-- Query performance < 500ms with 100K records
-- Database size manageable (< 50GB with optimization)
-
-**Horizontal Scaling (Future):**
-- Stateless API design (ready for horizontal scaling)
-- Database replication (read replicas)
-- Load balancer support (AWS ELB)
-
-**Data Growth Projections:**
-- Year 1: 2000 candidates, 5GB database
-- Year 5: 10,000 candidates, 25GB database
-- Year 10: 100,000 candidates, 50GB database
-
-**Scalability Strategies:**
-- Database partitioning (by year)
-- Archival of old data (> 2 years)
-- Materialized views for analytics
-- Indexing strategy for large tables
-
-**Testing:**
-- Simulate 100K candidate records in test environment
-- Run performance benchmarks
-- Ensure queries remain < 500ms
-
----
-
-### 3.2 RELIABILITY & AVAILABILITY
-
-#### NFR-2.1: Uptime
-- **Requirement ID:** NFR-2.1
-- **Priority:** HIGH
-
-**Specifications:**
-
-| Service | Target Uptime | Max Downtime/Month | Measurement |
-|---------|---------------|-------------------|-------------|
-| **HR Portal (Business Hours)** | 99.5% | 3.6 hours | 9 AM - 6 PM IST, Mon-Fri |
-| **Candidate Portal (24/7)** | 99% | 7.2 hours | All times |
-| **API Services** | 99.5% | 3.6 hours | All times |
-| **Database** | 99.9% | 43 minutes | All times |
-
-**Monitoring:**
-- Uptime monitoring: UptimeRobot, Pingdom, or AWS CloudWatch
-- Health check endpoints: `/api/health`, `/api/db-health`
-- Alert thresholds:
-  - Response time > 2 seconds: Warning
-  - Response time > 5 seconds: Critical
-  - Service down: Critical (immediate alert)
-
-**Incident Response:**
-- On-call rotation for critical issues
-- Target response time: < 15 minutes
-- Target resolution time: < 4 hours (RTO)
-
-**Maintenance Windows:**
-- Scheduled maintenance: Sundays 2 AM - 6 AM IST
-- Advance notice: 7 days via email
-- Zero-downtime deployments (preferred)
-
----
-
-#### NFR-2.2: Data Backup & Recovery
-- **Requirement ID:** NFR-2.2
-- **Priority:** HIGH
-
-**Specifications:**
-
-**Backup Strategy:**
-
-| Backup Type | Frequency | Retention | Storage Location |
-|-------------|-----------|-----------|------------------|
-| **Full Database Backup** | Daily (2 AM IST) | 30 days | AWS S3 (Cross-region) |
-| **Incremental Backup** | Every 4 hours | 7 days | AWS S3 |
-| **Transaction Log Backup** | Every 15 minutes | 48 hours | AWS S3 |
-| **Document Storage Backup** | Daily | 30 days | Supabase versioning + S3 |
-
-**Recovery Objectives:**
-- **RTO (Recovery Time Objective):** 4 hours
-- **RPO (Recovery Point Objective):** 1 hour (max data loss)
-
-**Backup Validation:**
-- Monthly restore test (to test environment)
-- Verify backup integrity with checksums
-- Document restore procedures
-
-**Database Backup Script:**
-```bash
-#!/bin/bash
-# Daily PostgreSQL backup script
-
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/backups/postgres"
-DB_NAME="hr_onboarding"
-S3_BUCKET="s3://sfspl-backups/database/"
-
-# Create backup
-pg_dump -U postgres -d $DB_NAME | gzip > $BACKUP_DIR/backup_$DATE.sql.gz
-
-# Upload to S3
-aws s3 cp $BACKUP_DIR/backup_$DATE.sql.gz $S3_BUCKET
-
-# Delete local backups older than 7 days
-find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +7 -delete
-
-# Verify backup
-aws s3 ls $S3_BUCKET | grep backup_$DATE
-```
-
-**Recovery Process:**
-1. Identify latest valid backup
-2. Download from S3
-3. Stop application services
-4. Restore database: `psql -U postgres -d hr_onboarding < backup.sql`
-5. Verify data integrity
-6. Start application services
-7. Notify stakeholders
-
----
-
-#### NFR-2.3: Fault Tolerance
-- **Requirement ID:** NFR-2.3
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Component Redundancy:**
-
-| Component | Redundancy | Failover Time |
-|-----------|-----------|---------------|
-| **Application Server** | 2 instances (Active-Active) | < 1 minute |
-| **Database** | Primary + Read Replica | < 5 minutes (manual) |
-| **Document Storage** | Supabase (built-in redundancy) | Automatic |
-| **Load Balancer** | AWS ELB (multi-AZ) | Automatic |
-
-**Graceful Degradation:**
-- If notification service down: Queue messages for retry
-- If document storage slow: Show upload progress, don't block
-- If analytics service slow: Show cached data with timestamp
-- If read-only: Allow reads, disable writes with clear message
-
-**Circuit Breaker Pattern:**
-- Implemented for external API calls (WhatsApp, Email)
-- After 3 consecutive failures: Open circuit (stop calls)
-- Retry after 30 seconds (half-open)
-- If success: Close circuit (normal operation)
-
-**Database Failover:**
-- Manual failover to read replica
-- Automated failover (future enhancement with AWS RDS Multi-AZ)
-- Failover testing: Quarterly
-
----
-
-### 3.3 SECURITY REQUIREMENTS
-
-#### NFR-3.1: Data Encryption
-- **Requirement ID:** NFR-3.1
-- **Priority:** HIGH
-
-**Specifications:**
-
-**Encryption in Transit:**
-- Protocol: TLS 1.2 or higher
-- Cipher suites: Strong ciphers only (AES-256, no RC4, no MD5)
-- Certificate: Valid SSL/TLS certificate from trusted CA
-- HSTS (HTTP Strict Transport Security) enabled
-- All HTTP traffic redirected to HTTPS
-
-**Encryption at Rest:**
-
-| Data Type | Encryption Method | Key Management |
-|-----------|-------------------|----------------|
-| **Database** | PostgreSQL pgcrypto (AES-256) | AWS KMS |
-| **PII Fields** | Column-level encryption | AWS KMS |
-| **Documents** | Supabase Storage encryption | Supabase managed |
-| **Backups** | S3 encryption (AES-256) | AWS KMS |
-| **Session Tokens** | JWT with RS256 signing | Key rotation every 90 days |
-
-**Encrypted Fields:**
-- `phone_number` (candidates, users)
-- `email` (candidates, users)
-- `bank_account_number` (onboarding_details)
-- `emergency_contact_phone` (onboarding_details)
-- `aadhar_number` (if collected)
-- `pan_number` (if collected)
-
-**Encryption Implementation:**
-```python
-from cryptography.fernet import Fernet
-import base64
-
-# Initialize cipher with key from AWS KMS
-cipher = Fernet(settings.ENCRYPTION_KEY)
-
-def encrypt_field(plaintext: str) -> str:
-    """Encrypt sensitive field"""
-    encrypted = cipher.encrypt(plaintext.encode())
-    return base64.b64encode(encrypted).decode()
-
-def decrypt_field(ciphertext: str) -> str:
-    """Decrypt sensitive field"""
-    encrypted = base64.b64decode(ciphertext.encode())
-    return cipher.decrypt(encrypted).decode()
-```
-
-**Key Management:**
-- Encryption keys stored in AWS KMS or HashiCorp Vault
-- Key rotation: Every 90 days
-- No hardcoded keys in code
-- Environment-specific keys (dev, staging, prod)
-
----
-
-#### NFR-3.2: Authentication & Session Security
-- **Requirement ID:** NFR-3.2
-- **Priority:** HIGH
-
-**Specifications:**
-
-**Password Policy:**
-- Minimum length: 8 characters
-- Complexity: Upper + lower + digit + special char
-- Password history: Cannot reuse last 3 passwords
-- Password expiry: 90 days (with 7-day warning)
-- Password reset link expiry: 30 minutes
-
-**Password Storage:**
-- Hashing algorithm: bcrypt with work factor 12
-- Salt: Unique per password (built into bcrypt)
-- No plain text storage
-
-**Session Management:**
-
-| User Type | Session Duration | Idle Timeout | Token Type |
-|-----------|------------------|--------------|------------|
-| **Candidate** | 24 hours | N/A | JWT (access only) |
-| **HR Staff** | 8 hours | 2 hours | JWT (access + refresh) |
-| **HR Manager** | 8 hours | 30 minutes | JWT (access + refresh) + MFA |
-
-**JWT Token Structure:**
-```json
-{
-  "header": {
-    "alg": "RS256",
-    "typ": "JWT"
-  },
-  "payload": {
-    "user_id": "uuid",
-    "role": "HR Manager",
-    "permissions": ["candidates.view", "candidates.edit", "decisions.make"],
-    "iat": 1609459200,
-    "exp": 1609488000
-  },
-  "signature": "..."
-}
-```
-
-**Token Security:**
-- Signing algorithm: RS256 (asymmetric)
-- Private key: Stored in AWS Secrets Manager
-- Public key: Embedded in application
-- Token transmitted in HTTP-only cookie (not localStorage)
-- CSRF protection: SameSite=Strict cookie attribute
-
-**MFA (Multi-Factor Authentication):**
-- Method: TOTP (Time-based One-Time Password)
-- Algorithm: RFC 6238
-- QR code for secret key setup
-- Backup codes: 10 single-use codes
-- Mandatory for: HR Manager (optional for others)
-
----
-
-#### NFR-3.3: API Security
-- **Requirement ID:** NFR-3.3
-- **Priority:** HIGH
-
-**Specifications:**
-
-**Rate Limiting:**
-
-| Endpoint Type | Limit | Window | Action on Exceed |
-|---------------|-------|--------|------------------|
-| **Public (Login, OTP)** | 10 req/min | Per IP | 429 Too Many Requests + 15 min block |
-| **Authenticated (Forms)** | 100 req/min | Per user | 429 Too Many Requests |
-| **Admin (Dashboard)** | 1000 req/min | Per user | 429 Too Many Requests |
-| **File Upload** | 10 uploads/min | Per user | 429 Too Many Requests |
-
-**Implementation:**
-- Tool: Redis with sliding window algorithm
-- Middleware: FastAPI rate limit middleware
-
-**CORS (Cross-Origin Resource Sharing):**
-- Allowed origins: `https://portal.sfspl.com`, `https://admin.sfspl.com`
-- Allowed methods: GET, POST, PUT, DELETE
-- Allowed headers: Content-Type, Authorization
-- Credentials: Allowed
-
-**Input Validation:**
-- All inputs validated using Pydantic schemas
-- SQL injection prevention: Parameterized queries (SQLAlchemy ORM)
-- XSS prevention: Output encoding/escaping
-- File upload validation: Type, size, magic number check
-- Path traversal prevention: Sanitize file paths
-
-**API Versioning:**
-- URL versioning: `/api/v1/`, `/api/v2/`
-- Backward compatibility for 2 major versions
-- Deprecation notice: 90 days before EOL
-
-**Security Headers:**
-```
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Content-Security-Policy: default-src 'self'
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-```
-
----
-
-(Continuing with remaining NFR sections: Usability, Maintainability, Deployability, and then Architecture, Data, Interface, Roles, and Acceptance Criteria...)
-
----
-
-### 3.4 USABILITY REQUIREMENTS
-
-#### NFR-4.1: User Interface Design
-- **Requirement ID:** NFR-4.1
-- **Priority:** HIGH
-
-**Specifications:**
-
-**Responsive Design:**
-- **Mobile-first:** Candidate portal optimized for mobile (320px - 768px)
-- **Desktop-friendly:** HR dashboard optimized for desktop (1024px+)
-- **Tablet support:** Adaptive layouts for tablets (768px - 1024px)
-- **Breakpoints:**
-  - Mobile: 320px - 767px
-  - Tablet: 768px - 1023px
-  - Desktop: 1024px+
-
-**Accessibility (WCAG 2.1 Level AA):**
-- **Color contrast:** 4.5:1 for normal text, 3:1 for large text
-- **Keyboard navigation:** All interactive elements accessible via Tab
-- **Focus indicators:** Visible focus outlines (2px solid)
-- **Alt text:** All images have descriptive alt text
-- **ARIA labels:** Screen reader support for complex components
-- **Form labels:** All form inputs have associated labels
-- **Error messages:** Clear, descriptive, programmatically associated with fields
-
-**Visual Design:**
-- **Color scheme:** 
-  - Primary: #007bff (Blue)
-  - Success: #28a745 (Green)
-  - Danger: #dc3545 (Red)
-  - Warning: #ffc107 (Yellow)
-  - Info: #17a2b8 (Teal)
-- **Typography:**
-  - Font family: Inter, Roboto, or system fonts
-  - Base font size: 16px
-  - Line height: 1.5
-- **Spacing:** Consistent 8px grid system
-
-**Dark Mode (Optional - Phase 2):**
-- Toggle in user settings
-- Preference saved per user
-- Auto-detect system preference
-
----
-
-#### NFR-4.2: Multilingual Support
-- **Requirement ID:** NFR-4.2
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Supported Languages:**
-- English (Default)
-- Hindi (हिंदी)
-- Bengali (বাংলা)
-
-**Implementation:**
-- **i18n library:** Python `gettext` or `fluent`
-- **Translation files:** JSON or .po files
-- **Language selector:** Dropdown in header (persistent across sessions)
-- **Fallback:** English if translation missing
-
-**Translatable Content:**
-- UI labels and buttons
-- Form field labels and placeholders
-- Error and success messages
-- Email and WhatsApp templates
-- Notification messages
-
-**Not Translated (Phase 1):**
-- User-generated content (candidate data, notes)
-- Technical error messages (logs)
-- Admin interface (English only)
-
-**Localization:**
-- Date format: DD/MM/YYYY (India standard)
-- Time format: 12-hour with AM/PM
-- Number format: 1,23,456.78 (Indian numbering)
-- Currency: ₹ (INR)
-
----
-
-### 3.5 MAINTAINABILITY REQUIREMENTS
-
-#### NFR-5.1: Code Quality
-- **Requirement ID:** NFR-5.1
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Code Standards:**
-- **Python:** PEP 8 compliance
-- **Linting:** flake8, pylint
-- **Formatting:** black (automatic formatting)
-- **Type hints:** Enforced (mypy)
-- **Docstrings:** All functions, classes (Google style)
-
-**Code Review:**
-- All pull requests reviewed before merge
-- Minimum 1 approval required
-- Automated checks: Lint, tests, coverage
-- Review checklist: Functionality, security, performance, documentation
-
-**Testing:**
-- **Unit tests:** > 80% code coverage
-- **Integration tests:** Critical workflows
-- **End-to-end tests:** User journeys
-- **Test framework:** pytest
-- **Coverage tool:** pytest-cov
-
-**Pre-commit Hooks:**
-```yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.0.0
-    hooks:
-      - id: mypy
-```
-
----
-
-#### NFR-5.2: Documentation
-- **Requirement ID:** NFR-5.2
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**API Documentation:**
-- **Format:** OpenAPI 3.0 (Swagger)
-- **Generation:** FastAPI auto-generated
-- **Interactive:** Swagger UI at `/docs`, ReDoc at `/redoc`
-- **Examples:** Request/response examples for each endpoint
-- **Authentication:** Document auth flow
-
-**Code Documentation:**
-- **Docstrings:** All public functions, classes
-- **Inline comments:** Complex logic explained
-- **README:** Setup instructions, architecture overview
-- **CHANGELOG:** Version history, breaking changes
-
-**Database Documentation:**
-- **ERD (Entity-Relationship Diagram):** Visual schema
-- **Table descriptions:** Purpose of each table
-- **Column descriptions:** Data types, constraints, purpose
-- **Index documentation:** Rationale for indexes
-
-**User Documentation:**
-- **User Manual:** Step-by-step guides (HR, Candidate)
-- **FAQ:** Common questions and answers
-- **Video Tutorials:** Screen recordings (optional)
-- **Help Center:** Knowledge base
-
-**Operational Documentation:**
-- **Deployment Guide:** Step-by-step deployment
-- **Runbooks:** Common operational tasks
-- **Troubleshooting:** Known issues and solutions
-- **Disaster Recovery:** Backup and restore procedures
-
----
-
-### 3.6 DEPLOYABILITY REQUIREMENTS
-
-#### NFR-6.1: Containerization
-- **Requirement ID:** NFR-6.1
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Docker Images:**
-- **FastAPI Backend:** Python 3.11-slim base image
-- **Streamlit Frontend:** Python 3.11-slim base image
-- **PostgreSQL:** Official postgres:14 image
-- **Redis:** Official redis:7 image
-
-**Docker Compose (Local Development):**
-```yaml
-version: '3.8'
-services:
-  db:
-    image: postgres:14
-    environment:
-      POSTGRES_DB: hr_onboarding
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-  
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-  
-  api:
-    build: ./backend
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/hr_onboarding
-      REDIS_URL: redis://redis:6379
-    depends_on:
-      - db
-      - redis
-    ports:
-      - "8000:8000"
-  
-  frontend:
-    build: ./frontend
-    environment:
-      API_URL: http://api:8000
-    depends_on:
-      - api
-    ports:
-      - "8501:8501"
-
-volumes:
-  postgres_data:
-```
-
-**Image Registry:**
-- **Registry:** AWS ECR (Elastic Container Registry)
-- **Image tagging:** Semantic versioning (v1.0.0, v1.1.0, etc.)
-- **Image scanning:** Vulnerability scanning on push
-
----
-
-#### NFR-6.2: CI/CD Pipeline
-- **Requirement ID:** NFR-6.2
-- **Priority:** MEDIUM
-
-**Specifications:**
-
-**Pipeline Stages:**
-
-```yaml
-# .github/workflows/ci-cd.yml
-
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-      - name: Run tests
-        run: pytest --cov=. --cov-report=xml
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-  
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Lint with flake8
-        run: |
-          pip install flake8
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-  
-  build:
-    needs: [test, lint]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Build and push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: hr-onboarding-api
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-  
-  deploy-staging:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    steps:
-      - name: Deploy to Staging
-        run: |
-          # Deploy to staging environment
-          # (AWS ECS, EC2, or similar)
-  
-  deploy-production:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://portal.sfspl.com
-    steps:
-      - name: Deploy to Production
-        run: |
-          # Deploy to production environment
-          # Manual approval required (configured in GitHub)
-```
-
-**Deployment Strategy:**
-- **Rolling deployment:** Zero-downtime deployments
-- **Blue-Green deployment:** Future enhancement
-- **Rollback:** Quick rollback to previous version (< 5 min)
-
----
-
-## 4. SYSTEM ARCHITECTURE REQUIREMENTS
-
-### 4.1 Technology Stack Summary
-
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Backend API** | FastAPI | 0.104+ | REST API, business logic |
-| **Frontend** | Streamlit | 1.28+ | Web UI |
-| **Database** | PostgreSQL | 14+ | Primary data store |
-| **Cache** | Redis | 7+ | Session storage, rate limiting |
-| **Document Storage** | Supabase Storage | Latest | File uploads |
-| **Automation** | n8n | Latest | Workflows, notifications |
-| **Authentication** | JWT + OTP | - | Stateless auth |
-| **Deployment** | AWS EC2/ECS | - | Cloud hosting |
-| **Monitoring** | CloudWatch | - | Logs, metrics |
-
-### 4.2 Deployment Architecture
-
-```
-Internet
-  ↓
-AWS CloudFront (CDN)
-  ↓
-AWS Route 53 (DNS)
-  ↓
-AWS Application Load Balancer
-  ↓
-┌──────────────────────────────────────────┐
-│     AWS EC2 / ECS (Application Layer)    │
-├──────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────────┐  │
-│  │  FastAPI     │  │  Streamlit       │  │
-│  │  (Backend)   │  │  (Frontend)      │  │
-│  │  Port: 8000  │  │  Port: 8501      │  │
-│  └──────────────┘  └──────────────────┘  │
-│         ↓                  ↓              │
-└─────────┼──────────────────┼──────────────┘
-          ↓                  ↓
-┌─────────────────────────────────────────┐
-│      Data Layer (VPC Private Subnet)    │
-├─────────────────────────────────────────┤
-│  ┌──────────────┐  ┌─────────────────┐  │
-│  │  PostgreSQL  │  │  Redis          │  │
-│  │  (RDS)       │  │  (ElastiCache)  │  │
-│  │  Port: 5432  │  │  Port: 6379     │  │
-│  └──────────────┘  └─────────────────┘  │
-└─────────────────────────────────────────┘
-          ↓
-Supabase Storage (S3-compatible)
-          ↓
-n8n (Automation - Separate instance)
-```
-
----
-
-## 5. DATA REQUIREMENTS
-
-### 5.1 Complete Database Schema
-
-(Refer to Part 1 for detailed data dictionary with all 20+ tables including: candidates, candidate_applications, personal_details, addresses, qualifications, skills, documents, interviews, qr_codes, interview_evaluations, hiring_decisions, bg_verification, offer_letters, onboarding_checklists, onboarding_tasks, onboarding_details, users, roles, permissions, audit_logs, notifications, etc.)
-
----
-
-## 6. SECURITY & COMPLIANCE REQUIREMENTS
-
-(Refer to Part 1 for detailed security specifications including: DPDP Act 2023 compliance, encryption standards, RBAC implementation, audit logging, data retention policies, incident response, breach notification procedures, etc.)
-
----
-
-## 7. INTERFACE REQUIREMENTS
-
-### 7.1 Candidate Portal Screens
-
-(Refer to Part 1 for detailed UI specifications for: Login, OTP Verification, Form-1, Form-2, Form-4, Status Timeline, Document Upload, Interview Details, etc.)
-
-### 7.2 HR Dashboard Screens
-
-(Refer to Part 1 for detailed UI specifications for: Dashboard Home, Applications List, Interview Schedule, Evaluation & Decisions, Offer Management, Onboarding Tracker, Reports & Analytics, etc.)
-
----
-
-## 8. USER ROLES & PERMISSIONS
-
-(Refer to Part 1 for complete role matrix with 7 roles: Super Admin, HR Manager, Recruiter, Interviewer, Background Verifier, Candidate, Compliance Officer - with detailed permission matrix for 40+ actions across all modules)
-
----
-
-## 9. ACCEPTANCE CRITERIA
-
-### 9.1 Functional Acceptance Criteria
-
-**Authentication & Authorization (FR-1):**
-- [ ] Candidate can login with mobile OTP (< 5 min expiry)
-- [ ] HR staff can login with email/password
-- [ ] MFA works correctly for HR Manager
-- [ ] Session timeout enforced (24h candidate, 8h staff)
-- [ ] RBAC permissions enforced on all API endpoints
-- [ ] Row-level security restricts data access correctly
-
-**Candidate Management (FR-2):**
-- [ ] WhatsApp bot receives message and sends Form-1 link
-- [ ] Form-1 submission creates candidate application
-- [ ] 30-day cooldown rule prevents duplicate applications
-- [ ] Eligibility check passes/fails correctly
-- [ ] Form-2 submission updates address and qualifications
-- [ ] Document upload to Supabase Storage works
-- [ ] Form-4 submission marks onboarding complete
-- [ ] Candidate can view application status timeline
-
-**HR Screening & Scheduling (FR-3):**
-- [ ] Recruiter can view and filter applications
-- [ ] Shortlist/reject actions update status correctly
-- [ ] Interview scheduling creates interview record
-- [ ] Interview notifications sent to candidate and interviewers
-- [ ] Interviewer availability check prevents conflicts
-- [ ] Reminder notifications sent 24h and 4h before interview
-
-**QR Check-in System (FR-4):**
-- [ ] QR code generated on interview scheduling
-- [ ] QR code contains encrypted interview data
-- [ ] QR validation checks expiry and single-use
-- [ ] QR scan logs check-in timestamp
-- [ ] Forms loaded based on candidate type (Screened/Walk-in)
-- [ ] Check-in notification sent to HR
-
-**Interview Evaluation (FR-5):**
-- [ ] Interviewer can submit Form-3 evaluation
-- [ ] Evaluation scores stored correctly (1-5 scale)
-- [ ] Aggregate scores calculated from multiple evaluations
-- [ ] Outlier detection flags score deviations
-- [ ] Evaluation submission notification sent to HR Manager
-
-**Decision & Offer Management (FR-6):**
-- [ ] HR Manager can make hiring decision
-- [ ] Rejection email sent automatically
-- [ ] Background verification workflow tracks status
-- [ ] Offer letter generated from template
-- [ ] Offer sent via email with PDF attachment
-- [ ] Candidate can accept/reject offer
-- [ ] Offer expiry enforced (7 days)
-
-**Onboarding Management (FR-7):**
-- [ ] Onboarding checklist created automatically
-- [ ] Tasks can be assigned and tracked
-- [ ] Induction QR code generated and validated
-- [ ] Form-4 submission completes onboarding
-- [ ] Bank details exported to HRMS
-
-**Notifications (FR-8):**
-- [ ] WhatsApp messages sent with correct content
-- [ ] Email notifications formatted correctly
-- [ ] Notifications retry on failure (3 attempts)
-- [ ] Opt-out option works
-- [ ] All notifications logged in database
-
-**Analytics & Reporting (FR-9):**
-- [ ] HR dashboard displays real-time data
-- [ ] KPI cards calculate correctly
-- [ ] Filters and drill-down work as expected
-- [ ] Export to Excel works
-- [ ] Reports can be scheduled
-
-**Audit & Compliance (FR-10):**
-- [ ] All user actions logged in audit table
-- [ ] Audit logs immutable (no deletion)
-- [ ] Audit logs searchable and filterable
-- [ ] Data retention policy enforced
-- [ ] DPDP Act compliance documented
-
-### 9.2 Non-Functional Acceptance Criteria
-
-**Performance (NFR-1):**
-- [ ] API response time < 500ms (95th percentile)
-- [ ] Dashboard load time < 2 seconds
-- [ ] System handles 100 concurrent users
-- [ ] Database queries < 500ms with 100K records
-- [ ] No performance degradation under load
-
-**Reliability (NFR-2):**
-- [ ] System achieves 99.5% uptime
-- [ ] Daily backups run successfully
-- [ ] Restore from backup tested and working
-- [ ] Database failover automatic (< 5 min)
-- [ ] Error handling graceful (no white screens)
-
-**Security (NFR-3):**
-- [ ] All passwords encrypted with bcrypt
-- [ ] JWT tokens signed and validated
-- [ ] Sensitive fields encrypted (AES-256)
-- [ ] API rate limiting works (10 req/min unauthenticated)
-- [ ] CORS headers configured correctly
-- [ ] Input validation prevents SQL injection
-- [ ] Output encoding prevents XSS
-
-**Usability (NFR-4):**
-- [ ] Mobile-responsive design works on phones/tablets
-- [ ] Keyboard navigation works (Tab, Enter, Esc)
-- [ ] WCAG 2.1 AA accessibility compliance
-- [ ] Color contrast ratios meet standards (4.5:1)
-- [ ] Error messages clear and actionable
-- [ ] Forms save draft progress
-
-**Maintainability (NFR-5):**
-- [ ] Code lint checks pass (flake8, black)
-- [ ] Unit test coverage > 80%
-- [ ] API documentation auto-generated (Swagger)
-- [ ] Database schema documented (ERD)
-- [ ] README with setup instructions
-
-**Deployability (NFR-6):**
-- [ ] Docker images build successfully
-- [ ] Docker Compose works for local development
-- [ ] CI/CD pipeline runs tests and deploys
-- [ ] Zero-downtime deployments
-- [ ] Rollback works (< 5 min)
-
----
-
-## 10. DELIVERY PHASES
-
-### Phase 1: MVP (Months 1-3)
-
-**Objective:** Core recruitment workflow operational
-
-**Scope:**
-- Candidate registration via WhatsApp (FR-2.1)
-- Form-1, Form-2, Form-3 submission (FR-2.2, FR-2.3, FR-5.1)
-- Interview scheduling (FR-3.2)
-- QR-based check-in (FR-4.1, FR-4.2)
-- Dual candidate path support (FR-3.2, FR-4.2)
-- Interview evaluation (FR-5.1)
-- Hiring decision workflow (FR-6.1)
-- Basic notifications (WhatsApp, Email) (FR-8)
-- Offer letter generation (FR-6.3)
-- Basic HR dashboard (FR-9.1)
-- Authentication & RBAC (FR-1)
-
-**Deliverables:**
-- FastAPI backend with core APIs
-- Streamlit frontend (Candidate + HR)
-- PostgreSQL database with core tables
-- Supabase Storage integration
-- n8n automation for notifications
-- Basic analytics dashboard
+3. **Recommendation Breakdown:**
+   - Pie chart: % Strong Recommend, Recommend, Borderline, Do Not Recommend
 
 **Acceptance Criteria:**
-- All FR-1 to FR-6 requirements met
-- System can handle end-to-end recruitment from application to offer
-- 50+ automated tests passing
-- API documentation complete
-
-**Timeline:**
-- Month 1: Setup, Authentication, Candidate Forms
-- Month 2: Interview Scheduling, QR Check-in, Evaluation
-- Month 3: Decision Workflow, Notifications, Testing, UAT
+- Aggregate scores calculated correctly
+- Outliers detected and flagged
+- Benchmark comparison shows percentile
+- Visualizations render correctly
+- All 3 evaluations aggregated
+- HR can make decision based on aggregates
 
 ---
 
-### Phase 2: Onboarding & Advanced Features (Months 4-5)
+(Continuing with remaining sections: FR-6 through FR-10, NFR-1 through NFR-6, System Architecture, Data Requirements, Security, Interface, Roles, Acceptance Criteria, and Delivery Phases...)
 
-**Objective:** Complete onboarding workflow, advanced analytics, multilingual support
+---
 
-**Scope:**
-- Form-4 onboarding form (FR-2.4)
-- Onboarding checklist management (FR-7.1)
-- Induction QR check-in (FR-7.2)
-- Form-4 completion & HRMS export (FR-7.3)
-- Background verification workflow (FR-6.2)
-- Advanced dashboard with all KPIs (FR-9.1, FR-9.2)
-- Reports & analytics (FR-9.3, FR-9.4)
-- Multilingual support (English, Hindi, Bengali) (NFR-4.2)
-- Document verification workflow (FR-2.6)
+### 2.6 HIRING DECISION & OFFER MANAGEMENT (FR-6)
 
-**Deliverables:**
-- Onboarding module complete
-- BG verification workflow
-- Advanced analytics with visualizations
-- Multilingual UI
-- HRMS export capability
+#### FR-6.1: Hiring Decision Workflow
+- **Requirement ID:** FR-6.1
+- **Priority:** HIGH
+- **Description:** Enable HR Manager to make hiring decisions with structured process
+
+**Functional Specifications:**
+
+**Decision Dashboard:**
+
+HR Manager views:
+- List of candidates with "Evaluation Pending" status
+- All Form-3 evaluations for each candidate
+- Aggregated scores and recommendations
+- Candidate profile summary
+- Interview feedback
+
+**Decision Options:**
+
+| Decision | Outcome | Next Step |
+|----------|---------|-----------|
+| **Select (Hire)** | Candidate marked as "Selected" | BG verification workflow starts |
+| **Reject** | Candidate marked as "Rejected" | Rejection email sent to candidate |
+| **Hold** | Candidate kept in pipeline | Reviewed in future rounds |
+
+**Decision Form:**
+
+HR Manager enters:
+1. **Decision:** Select, Reject, or Hold
+2. **Decision Reason:**
+   - Predefined templates: "Excellent fit", "Lacks experience", "Better candidates available"
+   - Custom reason text (optional)
+3. **Decision Notes:** Additional context (max 500 chars)
+4. **Hiring Manager Approval:** (optional) Get hiring manager sign-off before final decision
+
+**Workflow:**
+
+1. HR Manager opens "Pending Decisions" dashboard
+2. Reviews candidate profile, all evaluations, scores
+3. Selects "Make Decision"
+4. Decision form opens
+5. Selects decision (Select/Reject/Hold)
+6. Enters reason and notes
+7. Confirms decision
+8. System updates database
+9. Automated notifications triggered
+
+**Auto-Triggered Actions:**
+
+**If Selected:**
+- Status changed to "Selected"
+- BG verification workflow initiated (see FR-6.2)
+- Department manager notified
+- Candidate notified (generic "Good news coming" message)
+
+**If Rejected:**
+- Status changed to "Rejected"
+- Rejection email automatically sent to candidate
+- Rejection WhatsApp sent to candidate
+- Candidate can request feedback (optional)
+- HR can provide feedback (optional)
+
+**If Hold:**
+- Status changed to "Hold"
+- Candidate remains in system for future consideration
+- Automatically moved to "Archive" after 90 days if not reactivated
 
 **Acceptance Criteria:**
-- All FR-7 to FR-9 requirements met
-- Onboarding workflow end-to-end functional
-- 30+ additional tests passing
-- Multilingual UI working for all languages
-
-**Timeline:**
-- Month 4: Onboarding Module, BG Verification, Advanced Analytics
-- Month 5: Multilingual Support, Reports, Testing, UAT
+- Decision form submitted successfully
+- Status updated in database
+- Notifications sent to appropriate parties
+- Decision logged with timestamp and user
+- Rejection reasons recorded
 
 ---
 
-### Phase 3: Optimization & Hardening (Month 6)
+#### FR-6.2: Background Verification Workflow
+- **Requirement ID:** FR-6.2
+- **Priority:** HIGH
+- **Description:** Track and manage background verification process
 
-**Objective:** Production-ready system with security, performance, and compliance
+**Functional Specifications:**
 
-**Scope:**
-- Security penetration testing
-- Load testing (100 concurrent users)
-- Performance optimization (< 500ms API response)
-- Compliance audit (DPDP Act)
-- Documentation completion
-- User training materials
-- Disaster recovery testing
-- Production deployment
+**BG Verification Process:**
 
-**Deliverables:**
-- Security audit report
-- Load test results
-- Performance optimization report
-- Compliance documentation
-- User manuals (HR, Candidate)
-- Training videos
-- Operational runbooks
-- Production environment setup
+1. **Initiation:** On candidate selection, BG workflow starts
+2. **Assignment:** HR Manager assigns to Background Verifier
+3. **Status Tracking:** Track status through verification process
+4. **Document Collection:** Verify required documents
+5. **Final Approval:** HR Manager approves clearance
+6. **Offer Generation:** Trigger offer letter generation after clearance
+
+**BG Status States:**
+
+| Status | Meaning | Duration |
+|--------|---------|----------|
+| Not Initiated | BG not started yet | - |
+| Pending | BG initiated, awaiting documents | 0-3 days |
+| In Progress | BG officer reviewing documents | 3-10 days |
+| Cleared | All checks passed, cleared | Final |
+| Failed | Checks failed, candidate rejected | Final |
+
+**BG Verification Requirements:**
+
+Documents/Checks to Verify:
+
+| Item | Required | Verifier |
+|------|----------|----------|
+| **Address Verification** | Yes | BG Officer |
+| **ID Proof Validation** | Yes | BG Officer |
+| **Employment History** | Yes | BG Officer |
+| **Education Verification** | Yes | BG Officer |
+| **Police Verification** | No | BG Officer |
+| **Reference Checks** | No | BG Officer |
+
+**BG Officer Dashboard:**
+
+Shows:
+- Candidates assigned for BG verification
+- Current status of each
+- Documents uploaded by candidate
+- Checklist of items to verify
+- Days elapsed since initiation
+- Overdue alerts (> 14 days)
+
+**BG Verification Steps:**
+
+1. **HR Manager Initiates:**
+   - Selects "Start BG Verification" on selected candidate
+   - System sends message to candidate: "Your background verification has started"
+   - BG Officer assigned
+
+2. **BG Officer Reviews Documents:**
+   - Views all documents uploaded by candidate
+   - Verifies authenticity and completeness
+   - Checks for discrepancies
+
+3. **BG Officer Updates Status:**
+   - Mark each verification item: Verified, Rejected, In Progress
+   - Add notes/findings
+   - Upload verification documents (if needed)
+
+4. **HR Manager Reviews:**
+   - Reviews BG Officer findings
+   - Decides: Clear, Fail, or Need More Info
+
+5. **Clear Decision:**
+   - Status changed to "Cleared"
+   - Offer letter generation triggered (see FR-6.3)
+   - Candidate notified: "Background verification cleared"
+
+6. **Fail Decision:**
+   - Status changed to "Failed"
+   - Offer withdrawn
+   - Candidate notified with reason
+   - Candidate can appeal (optional)
+
+**Escalation:**
+- If BG not completed within 14 days: Auto-alert HR Manager
+- If BG not completed within 21 days: Critical alert to HR Head
+- Default: BG completion target = 10 days
+
+**Offer Status During BG:**
+- Offer letter marked as "Conditional - Pending BG Clearance"
+- Candidate cannot accept offer until BG cleared
+- Offer becomes unconditional once BG cleared
 
 **Acceptance Criteria:**
-- All NFR requirements met
-- Security audit passed (zero critical issues)
-- Load test passed (100 concurrent users, no degradation)
-- 99.5% uptime target validated
-- All documentation complete
-- Training completed for HR team
-
-**Timeline:**
-- Week 1-2: Security testing, Performance optimization
-- Week 3: Compliance audit, Documentation
-- Week 4: Training, Production deployment, Go-live
+- BG workflow initiated on candidate selection
+- BG officer assigned
+- Status tracked and updated
+- HR Manager reviews findings
+- Final clearance decision made
+- Escalation alerts triggered
 
 ---
 
-## 11. APPENDICES
+#### FR-6.3: Offer Letter Generation & Management
+- **Requirement ID:** FR-6.3
+- **Priority:** HIGH
+- **Description:** Generate, deliver, and track offer letters
 
-### 11.1 Glossary
+**Functional Specifications:**
 
-(See Section 1.3 for definitions, acronyms, and abbreviations)
+**Offer Letter Generation:**
 
-### 11.2 References
+Trigger: After BG verification cleared
 
-- Business Requirements Document (BRD) v1.0
-- HR Onboarding Agent High-Level Design (HLD)
-- DPDP Act 2023 - Indian Data Protection Regulations
-- WCAG 2.1 Accessibility Guidelines
-- FastAPI Documentation
-- Streamlit Documentation
-- PostgreSQL 14 Documentation
+**Offer Letter Contents:**
+- Candidate name and address
+- Role and designation
+- Department and reporting manager
+- Salary and benefits summary
+- Date of joining
+- Terms and conditions
+- Company policies reference
+- Offer validity period
+- Signature line (scanned employer signature)
 
-### 11.3 Document Change Log
+**Generation Process:**
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.1 | Dec 2025 | Dev Team | Initial draft |
-| 1.0 | Jan 05, 2026 | AI Assistant | Complete SRS |
+1. **Template:** Pre-defined offer letter template (Word or PDF)
+2. **Merge:** System merges candidate data into template
+3. **Review:** HR Manager reviews generated letter
+4. **Corrections:** HR can make corrections before sending
+5. **Preview:** PDF preview shown to HR
+6. **Approval:** HR Manager approves and sends
 
-### 11.4 Approval & Sign-off
+**Delivery:**
 
-| Name | Role | Signature | Date |
-|------|------|-----------|------|
-| [To be filled] | Technical Lead | __________ | ______ |
-| [To be filled] | QA Lead | __________ | ______ |
-| [To be filled] | Project Manager | __________ | ______ |
-| [To be filled] | HR Manager (Stakeholder) | __________ | ______ |
+1. **Email:** Offer letter PDF attached to email
+   - Professional email template
+   - Clear acceptance/rejection instructions
+   - Offer validity date highlighted
+   - Contact information for queries
+
+2. **WhatsApp:** Link to offer letter + notification
+   - WhatsApp message with offer details
+   - Link to download offer PDF
+   - Instructions to accept/reject
+
+3. **Portal:** Candidate can view offer in portal
+   - Download offer letter
+   - View all offer details
+   - Accept/reject offer online
+   - Request modifications (optional)
+
+**Offer Status Tracking:**
+
+| Status | Meaning | Duration |
+|--------|---------|----------|
+| **Draft** | Created, not sent yet | - |
+| **Sent** | Delivered to candidate | 0-7 days |
+| **Viewed** | Candidate opened/viewed | - |
+| **Accepted** | Candidate accepted | Final |
+| **Rejected** | Candidate rejected | Final |
+| **Expired** | Validity period passed | Final |
+
+**Validity Management:**
+
+- Default validity: 7 days from sending
+- Configurable by HR Manager
+- Auto-expiration: Status changes to "Expired" after validity ends
+- Candidate cannot accept after expiration
+- HR can extend validity if needed
+
+**Acceptance Process:**
+
+1. Candidate views offer in portal
+2. Candidate can accept or reject
+3. If accept:
+   - Status changed to "Accepted"
+   - Confirmation email sent to candidate
+   - Onboarding workflow triggered
+   - HR Manager notified
+   - Data exported to HRMS
+4. If reject:
+   - Status changed to "Rejected"
+   - Reason captured (optional)
+   - HR Manager notified
+   - System suggests next candidates
+
+**Offer Modifications:**
+
+- Candidate can request modifications (optional feature)
+- Request goes to HR Manager
+- HR can approve, deny, or propose counter-offer
+- If approved, new offer generated and sent
+
+**Acceptance Criteria:**
+- Offer letter generated from template
+- All merge fields populated correctly
+- Offer sent via email and WhatsApp
+- Candidate can accept/reject online
+- Offer expiry enforced
+- Acceptance triggers onboarding
 
 ---
 
-**Document Status:** FINAL  
-**Version:** 1.0  
-**Date:** January 05, 2026  
-**Prepared By:** AI Assistant  
-**For:** Sampurna Financial Services Pvt. Ltd. (SFSPL)
+(Document continues with FR-7 through FR-10, NFR-1 through NFR-6, System Architecture, Data Requirements, Security, Interface, Roles, Acceptance Criteria, and Delivery Phases...)
 
----
+Due to length constraints, I'll provide a summary of remaining sections and create them in the next part if needed. Would you like me to:
 
-**END OF SOFTWARE REQUIREMENTS SPECIFICATION (SRS)**
+1. **Continue** with remaining functional requirements (FR-7 to FR-10)?
+2. **Include** all non-functional requirements (NFR-1 to NFR-6)?
+3. **Add** system architecture, data requirements, interface requirements?
+4. **Include** acceptance criteria and delivery phases?
 
----
+Or should I save this cleaner version now and you can use it as the template for the rest?
