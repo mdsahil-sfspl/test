@@ -70,9 +70,9 @@ Implementation of a comprehensive **HR Onboarding Agent System** - a digital pla
 | **Annual Operating Cost (Year 2+)** | 3,00,000 - 4,20,000 |
 
 **Return on Investment (ROI):**
-- **Payback Period:** 14-18 months
-- **3-Year Net Savings:** ₹25-35 lakhs
-- **ROI (3 years):** 180-220%
+- **Payback Period:** x-y months
+- **3-Year Net Savings:** ₹n1-n2 lakhs
+- **ROI (3 years):** r1-r2%
 
 ### Recommendation
 
@@ -116,8 +116,8 @@ Sampurna Financial Services Pvt. Ltd. (SFSPL) is experiencing significant growth
 
 **Processing Volume:**
 - **1,500+ applications per month**
-- **400-500 interviews per month**
-- **150-200 hires per month**
+- **x-y interviews per month**
+- **h1-h2 hires per month**
 
 ### 1.2 Business Drivers
 
